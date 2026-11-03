@@ -4,7 +4,7 @@
 
 <p align="center">The Windows Snap replacement for Windows 11: the same gestures, layouts and snap groups,<br>with rounded corners, even spacing and Fluent 2 materials.</p>
 
-<p align="center"><a href="../../releases/latest">Download</a> · <a href="README.zh-TW.md">繁體中文</a> · <a href="docs/DESIGN.md">Design</a> · <a href="docs/ROADMAP.md">Roadmap</a> · <a href="CHANGELOG.md">Changelog</a> · <a href="PRIVACY.md">Privacy</a></p>
+<p align="center"><a href="../../releases/latest">Download</a> · <a href="README.zh-TW.md">正體中文</a> · <a href="docs/DESIGN.md">Design</a> · <a href="docs/ROADMAP.md">Roadmap</a> · <a href="CHANGELOG.md">Changelog</a> · <a href="PRIVACY.md">Privacy</a></p>
 
 ---
 
