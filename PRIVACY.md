@@ -32,5 +32,5 @@ Enhanced Snap collects no data from anyone, including children.
 
 ## Contact and changes
 
-Questions: open an issue in the project's GitHub repository. Changes to this policy are published in this file,
+Questions: open an issue at <https://github.com/VikaKumaChR/EnhancedSnap/issues>. Changes to this policy are published in this file,
 with a new effective date.

@@ -28,22 +28,9 @@ Two channels, one build (`./build.ps1`):
 
 ## GitHub
 
-First time:
-
-1. Create an empty public repository on GitHub (for example `enhanced-snap`), without a README or license (both are
-   here).
-2. In this folder:
-
-   ```powershell
-   git init -b main
-   git add .
-   git commit -m "Enhanced Snap 1.0.0"
-   git remote add origin https://github.com/<owner>/enhanced-snap.git
-   git push -u origin main
-   ```
-
-   `.gitignore` keeps out `ProbScreenshots/` (private screenshots and recordings), `artifacts/`, build output and the
-   folder's `desktop.ini`. Check `git status` before the first commit.
+Repository: <https://github.com/VikaKumaChR/EnhancedSnap> (`main`). `.gitignore` keeps out `ProbScreenshots/`
+(private screenshots and recordings), `artifacts/`, build output, logs and the folder's `desktop.ini`; check
+`git status` before committing.
 
 Every release:
 
@@ -75,7 +62,7 @@ Each submission:
 | Section | What to enter |
 | --- | --- |
 | Pricing and availability | Free; all markets; public. |
-| Properties | Category *Productivity* (subcategory none) or *Utilities & tools*. Privacy policy URL: `https://github.com/<owner>/enhanced-snap/blob/main/PRIVACY.md`. Website and support: the repository and its Issues page. System requirements: Windows 11, keyboard and mouse. |
+| Properties | Category *Productivity* (subcategory none) or *Utilities & tools*. Privacy policy URL: `https://github.com/VikaKumaChR/EnhancedSnap/blob/main/PRIVACY.md`. Website: `https://github.com/VikaKumaChR/EnhancedSnap`; support: `https://github.com/VikaKumaChR/EnhancedSnap/issues`. System requirements: Windows 11, keyboard and mouse. |
 | Age ratings | IARC questionnaire: a utility with no user-generated content, chat, purchases or location → rated for everyone. |
 | Packages | Upload `artifacts/store/EnhancedSnap-<v>-x64.msix`. Device family: Windows Desktop (minimum build 22000 comes from the manifest). |
 | Store listings | English (United States), Chinese (Traditional), Chinese (Simplified): the texts in [`docs/store/`](store). Screenshots: at least one, 1920 × 1080 recommended (shot list in the listing files). |
