@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="EnhancedSnap.Settings.Pages.GeneralPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
+    xmlns:controls="using:EnhancedSnap.Settings.Controls">
+
+    <ScrollViewer>
+        <Grid Margin="{StaticResource PageContentMargin}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MaxWidth="{StaticResource PageMaxWidth}" />
+            </Grid.ColumnDefinitions>
+        <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+            <TextBlock Margin="0,24,0,0" Style="{StaticResource TitleTextBlockStyle}" Text="{x:Bind S.Nav_General}" />
+            <TextBlock Margin="0,4,0,16" Style="{StaticResource PageDescriptionTextBlockStyle}" Text="{x:Bind S.General_Desc}" />
+
+            <InfoBar
+                x:Name="WelcomeBar"
+                Margin="0,0,0,12"
+                Closed="WelcomeBar_Closed"
+                IsClosable="True"
+                Message="{x:Bind S.Welcome_Body}"
+                Severity="Informational"
+                Title="{x:Bind S.Welcome_Title}" />
+
+            <!-- Status hero: live preview of the primary display's layout with the current spacing. -->
+            <Border
+                Padding="20"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="{StaticResource OverlayCornerRadius}">
+                <Grid ColumnSpacing="24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border
+                        Width="224"
+                        Height="140"
+                        BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource OverlayCornerRadius}">
+                        <controls:LayoutPreview x:Name="HeroPreview" ReferenceWidthEpx="1000" ShowWindows="True" />
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon x:Name="StatusIcon" FontSize="18" Glyph="&#xE73E;" />
+                            <TextBlock x:Name="StatusTitle" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        </StackPanel>
+                        <TextBlock
+                            x:Name="StatusBody"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource BodyTextBlockStyle}"
+                            TextWrapping="Wrap" />
+                        <StackPanel Margin="0,10,0,0" Orientation="Horizontal" Spacing="8">
+                            <Button x:Name="StartButton" Click="StartButton_Click" Content="{x:Bind S.Action_Start}" Style="{StaticResource AccentButtonStyle}" />
+                            <Button x:Name="PreviewButton" Click="PreviewButton_Click">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon FontSize="14" Glyph="&#xECA5;" />
+                                    <TextBlock Text="{x:Bind S.Action_PreviewZones}" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Windows Snap replacement: grouped like Settings → System → Multitasking → Snap windows. -->
+            <TextBlock Style="{StaticResource SectionHeaderTextBlockStyle}" Text="{x:Bind S.Section_Replace}" />
+            <toolkit:SettingsExpander Description="{x:Bind S.Setting_ReplaceSnapDesc}" Header="{x:Bind S.Setting_ReplaceSnap}" IsExpanded="True">
+                <toolkit:SettingsExpander.HeaderIcon><FontIcon Glyph="&#xECA5;" /></toolkit:SettingsExpander.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind Vm.ReplaceWindowsSnap, Mode=TwoWay}" OffContent="{x:Bind S.Toggle_Off}" OnContent="{x:Bind S.Toggle_On}" />
+                <toolkit:SettingsExpander.Items>
+                    <toolkit:SettingsCard Description="{x:Bind S.Setting_EdgeSnappingDesc}" Header="{x:Bind S.Setting_EdgeSnapping}" IsEnabled="{x:Bind Vm.ReplaceWindowsSnap, Mode=OneWay}">
+                        <ToggleSwitch IsOn="{x:Bind Vm.EdgeSnapping, Mode=TwoWay}" OffContent="{x:Bind S.Toggle_Off}" OnContent="{x:Bind S.Toggle_On}" />
+                    </toolkit:SettingsCard>
+                    <toolkit:SettingsCard Description="{x:Bind S.Setting_LayoutsHoverDesc}" Header="{x:Bind S.Setting_LayoutsHover}" IsEnabled="{x:Bind Vm.ReplaceWindowsSnap, Mode=OneWay}">
+                        <ToggleSwitch IsOn="{x:Bind Vm.LayoutsOnMaximizeHover, Mode=TwoWay}" OffContent="{x:Bind S.Toggle_Off}" OnContent="{x:Bind S.Toggle_On}" />
+                    </toolkit:SettingsCard>
+                    <toolkit:SettingsCard Description="{x:Bind S.Setting_SnapBarDesc}" Header="{x:Bind S.Setting_SnapBar}" IsEnabled="{x:Bind Vm.ReplaceWindowsSnap, Mode=OneWay}">
+                        <ToggleSwitch IsOn="{x:Bind Vm.SnapBar, Mode=TwoWay}" OffContent="{x:Bind S.Toggle_Off}" OnContent="{x:Bind S.Toggle_On}" />
+                    </toolkit:SettingsCard>
+                    <toolkit:SettingsCard Description="{x:Bind S.Setting_SnapAssistDesc}" Header="{x:Bind S.Setting_SnapAssist}" IsEnabled="{x:Bind Vm.ReplaceWindowsSnap, Mode=OneWay}">
+                        <ToggleSwitch IsOn="{x:Bind Vm.SnapAssist, Mode=TwoWay}" OffContent="{x:Bind S.Toggle_Off}" OnContent="{x:Bind S.Toggle_On}" />
+                    </toolkit:SettingsCard>
+                    <toolkit:SettingsCard Description="{x:Bind S.Setting_GroupFrameDesc}" Header="{x:Bind S.Setting_GroupFrame}">
+                        <ToggleSwitch IsOn="{x:Bind Vm.GroupFrame, Mode=TwoWay}" OffContent="{x:Bind S.Toggle_Off}" OnContent="{x:Bind S.Toggle_On}" />
+                    </toolkit:SettingsCard>
+                    <toolkit:SettingsCard Description="{x:Bind S.Setting_FrameMaterialDesc}" Header="{x:Bind S.Setting_FrameMaterial}" IsEnabled="{x:Bind Vm.GroupFrame, Mode=OneWay}">
+                        <ComboBox MinWidth="200" SelectedIndex="{x:Bind Vm.FrameMaterialIndex, Mode=TwoWay}">
+                            <ComboBoxItem Content="{x:Bind S.FrameMaterial_Mica}" />
+                            <ComboBoxItem Content="{x:Bind S.FrameMaterial_MicaAlt}" />
+                            <ComboBoxItem Content="{x:Bind S.FrameMaterial_Acrylic}" />
+                            <ComboBoxItem Content="{x:Bind S.FrameMaterial_Solid}" />
+                        </ComboBox>
+                    </toolkit:SettingsCard>
+                    <toolkit:SettingsCard Description="{x:Bind S.Setting_GroupsInTaskbarDesc}" Header="{x:Bind S.Setting_GroupsInTaskbar}">
+                        <ToggleSwitch IsOn="{x:Bind Vm.GroupsInTaskbar, Mode=TwoWay}" OffContent="{x:Bind S.Toggle_Off}" OnContent="{x:Bind S.Toggle_On}" />
+                    </toolkit:SettingsCard>
+                </toolkit:SettingsExpander.Items>
+            </toolkit:SettingsExpander>
+
+            <InfoBar
+                x:Name="AdminBar"
+                IsClosable="True"
+                Message="{x:Bind S.Admin_Failed}"
+                Severity="Warning" />
+            <toolkit:SettingsCard x:Name="AdminCard" Description="{x:Bind S.Setting_RunAsAdminDesc}" Header="{x:Bind S.Setting_RunAsAdmin}">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE7EF;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch
+                    x:Name="AdminSwitch"
+                    IsOn="{x:Bind Vm.RunAsAdministrator, Mode=OneWay}"
+                    OffContent="{x:Bind S.Toggle_Off}"
+                    OnContent="{x:Bind S.Toggle_On}"
+                    Toggled="AdminSwitch_Toggled" />
+            </toolkit:SettingsCard>
+
+            <TextBlock Style="{StaticResource SectionHeaderTextBlockStyle}" Text="{x:Bind S.Section_Behavior}" />
+            <toolkit:SettingsCard Description="{x:Bind S.Setting_EnabledDesc}" Header="{x:Bind S.Setting_Enabled}">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE7E8;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind Vm.Enabled, Mode=TwoWay}" OffContent="{x:Bind S.Toggle_Off}" OnContent="{x:Bind S.Toggle_On}" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard Description="{x:Bind S.Setting_ActivationDesc}" Header="{x:Bind S.Setting_Activation}">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE7C9;" /></toolkit:SettingsCard.HeaderIcon>
+                <ComboBox MinWidth="240" SelectedIndex="{x:Bind Vm.ActivationIndex, Mode=TwoWay}">
+                    <ComboBoxItem Content="{x:Bind S.Activation_HoldShift}" />
+                    <ComboBoxItem Content="{x:Bind S.Activation_Always}" />
+                </ComboBox>
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard Description="{x:Bind S.Setting_SpanDesc}" Header="{x:Bind S.Setting_Span}">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE8B3;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind Vm.SpanWithCtrl, Mode=TwoWay}" OffContent="{x:Bind S.Toggle_Off}" OnContent="{x:Bind S.Toggle_On}" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard Description="{x:Bind S.Setting_RestoreSizeDesc}" Header="{x:Bind S.Setting_RestoreSize}">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE73F;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind Vm.RestoreSizeOnUnsnap, Mode=TwoWay}" OffContent="{x:Bind S.Toggle_Off}" OnContent="{x:Bind S.Toggle_On}" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard Description="{x:Bind S.Setting_AllMonitorsDesc}" Header="{x:Bind S.Setting_AllMonitors}">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE7F4;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind Vm.ShowZonesOnAllMonitors, Mode=TwoWay}" OffContent="{x:Bind S.Toggle_Off}" OnContent="{x:Bind S.Toggle_On}" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard Description="{x:Bind S.Setting_KeepInZonesDesc}" Header="{x:Bind S.Setting_KeepInZones}">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE72C;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind Vm.KeepWindowsInZones, Mode=TwoWay}" OffContent="{x:Bind S.Toggle_Off}" OnContent="{x:Bind S.Toggle_On}" />
+            </toolkit:SettingsCard>
+
+            <TextBlock Style="{StaticResource SectionHeaderTextBlockStyle}" Text="{x:Bind S.Section_System}" />
+            <InfoBar
+                x:Name="StartupBlockedBar"
+                IsClosable="True"
+                Message="{x:Bind S.Startup_Blocked}"
+                Severity="Warning">
+                <InfoBar.ActionButton>
+                    <Button Click="OpenStartupApps_Click" Content="{x:Bind S.Action_OpenStartupApps}" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+            <toolkit:SettingsCard Description="{x:Bind S.Setting_StartupDesc}" Header="{x:Bind S.Setting_Startup}">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE748;" /></toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="StartupSwitch" IsOn="{x:Bind Vm.LaunchAtStartup, Mode=TwoWay}" OffContent="{x:Bind S.Toggle_Off}" OnContent="{x:Bind S.Toggle_On}" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard Description="{x:Bind S.Setting_LanguageDesc}" Header="{x:Bind S.Setting_Language}">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE775;" /></toolkit:SettingsCard.HeaderIcon>
+                <ComboBox MinWidth="240" SelectedIndex="{x:Bind Vm.LanguageIndex, Mode=TwoWay}">
+                    <ComboBoxItem Content="{x:Bind S.Language_System}" />
+                    <ComboBoxItem Content="English" />
+                    <ComboBoxItem Content="繁體中文" />
+                    <ComboBoxItem Content="简体中文" />
+                </ComboBox>
+            </toolkit:SettingsCard>
+        </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>

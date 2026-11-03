@@ -1,0 +1,28 @@
+﻿<Project>
+  <!-- Shared build settings for every project in the repository. -->
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <Product>Enhanced Snap</Product>
+    <Company>Enhanced Snap</Company>
+    <Authors>Enhanced Snap contributors</Authors>
+    <Copyright>Copyright (c) 2026 Enhanced Snap contributors</Copyright>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+
+    <!-- Windows 11 only: 22000 is the first Windows 11 build (rounded corners, DWMWA_WINDOW_CORNER_PREFERENCE). -->
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.22000.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>10.0.22000.0</SupportedOSPlatformVersion>
+
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+
+    <!-- Smaller native images; we never surface framework exception text to users. -->
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+
+    <ArtifactsRoot>$(MSBuildThisFileDirectory)artifacts\</ArtifactsRoot>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,6 @@
+{
+  "_comment": "Package identity for the Microsoft Store build. After reserving the app name in Partner Center, copy the three values from Product management > Product identity (Package/Identity/Name, Package/Identity/Publisher, Package/Properties/PublisherDisplayName). The placeholders below build a valid package, but Partner Center rejects an upload whose identity doesn't match the reservation.",
+  "Name": "EnhancedSnap",
+  "Publisher": "CN=00000000-0000-0000-0000-000000000000",
+  "PublisherDisplayName": "Enhanced Snap"
+}

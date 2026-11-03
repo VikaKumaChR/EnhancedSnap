@@ -1,0 +1,60 @@
+# Release: push a tag such as v1.0.0 (matching <Version> in Directory.Build.props).
+# Builds with build.ps1 on a Windows runner (Visual Studio with the C++ tools for NativeAOT, Windows SDK for the
+# MSIX), publishes a GitHub release with the MSI, the portable ZIP and SHA256SUMS.txt, and keeps the MSIX as a
+# workflow artifact for the Microsoft Store upload (Partner Center signs it; it isn't installable from GitHub).
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Check the tag against the project version
+        shell: pwsh
+        run: |
+          $version = ([xml](Get-Content Directory.Build.props)).Project.PropertyGroup.Version | Select-Object -First 1
+          if ("v$version" -ne $env:GITHUB_REF_NAME) { throw "Tag $env:GITHUB_REF_NAME does not match <Version>$version</Version>" }
+          "VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Build (tests, NativeAOT, ZIP, MSI, MSIX)
+        shell: pwsh
+        run: ./build.ps1 -Version $env:VERSION
+
+      - name: Release notes from CHANGELOG.md
+        shell: pwsh
+        run: |
+          $text = Get-Content CHANGELOG.md -Raw -Encoding UTF8
+          $match = [regex]::Match($text, "(?ms)^## $([regex]::Escape($env:VERSION)) .*?\r?\n(.*?)(?=^## |\z)")
+          if (-not $match.Success) { throw "CHANGELOG.md has no section for $env:VERSION" }
+          $notes = $match.Groups[1].Value.Trim() + "`n`n" +
+            "**Downloads:** ``EnhancedSnap-$env:VERSION-x64.msi`` (recommended, per-user install) or the portable ZIP. " +
+            "Verify them with ``SHA256SUMS.txt``. Requires Windows 11 (build 22000 or later), x64."
+          Set-Content release-notes.md $notes -Encoding UTF8
+
+      - name: GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $assets = @(Get-ChildItem artifacts/dist -File |
+            Where-Object { $_.Extension -in '.msi', '.zip' -or $_.Name -eq 'SHA256SUMS.txt' } |
+            ForEach-Object FullName)
+          gh release create $env:GITHUB_REF_NAME @assets --title "Enhanced Snap $env:VERSION" --notes-file release-notes.md
+
+      - name: Keep the Store package
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnhancedSnap-${{ env.VERSION }}-store-msix
+          path: artifacts/store/*.msix
+          if-no-files-found: error

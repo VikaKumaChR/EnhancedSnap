@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/EnhancedSnap.Core/EnhancedSnap.Core.csproj" />
+    <Project Path="src/EnhancedSnap.Settings/EnhancedSnap.Settings.csproj" />
+    <Project Path="src/EnhancedSnap/EnhancedSnap.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EnhancedSnap.Core.Tests/EnhancedSnap.Core.Tests.csproj" />
+  </Folder>
+</Solution>

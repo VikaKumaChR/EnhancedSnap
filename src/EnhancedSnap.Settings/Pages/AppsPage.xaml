@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="EnhancedSnap.Settings.Pages.AppsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:EnhancedSnap.Settings.Pages">
+
+    <ScrollViewer>
+        <Grid Margin="{StaticResource PageContentMargin}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MaxWidth="{StaticResource PageMaxWidth}" />
+            </Grid.ColumnDefinitions>
+        <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+            <TextBlock Margin="0,24,0,0" Style="{StaticResource TitleTextBlockStyle}" Text="{x:Bind S.Nav_Apps}" />
+            <TextBlock Margin="0,4,0,16" Style="{StaticResource PageDescriptionTextBlockStyle}" Text="{x:Bind S.Apps_Desc}" />
+
+            <Border
+                Padding="16"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="{StaticResource ControlCornerRadius}">
+                <StackPanel Spacing="8">
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="AppBox" KeyDown="AppBox_KeyDown" PlaceholderText="{x:Bind S.Apps_Placeholder}" />
+                        <Button Grid.Column="1" Click="Add_Click" Style="{StaticResource AccentButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontSize="14" Glyph="&#xE710;" />
+                                <TextBlock Text="{x:Bind S.Action_Add}" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind S.Apps_Hint}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <ItemsControl x:Name="AppList" Margin="0,4,0,0">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="local:ExcludedApp">
+                        <Grid
+                            Margin="0,0,0,4"
+                            Padding="16,8,8,8"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            ColumnSpacing="12"
+                            CornerRadius="{StaticResource ControlCornerRadius}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon VerticalAlignment="Center" FontSize="16" Glyph="&#xE71D;" />
+                            <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{x:Bind Name}" />
+                            <Button Grid.Column="2" Click="Remove_Click" Tag="{x:Bind Name}">
+                                <FontIcon FontSize="14" Glyph="&#xE74D;" />
+                            </Button>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock x:Name="EmptyText" Margin="1,0,0,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind S.Apps_Empty}" />
+
+            <InfoBar
+                Margin="0,24,0,0"
+                IsClosable="False"
+                IsOpen="True"
+                Message="{x:Bind AdminBody}"
+                Severity="Informational"
+                Title="{x:Bind S.Apps_AdminTitle}" />
+        </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>

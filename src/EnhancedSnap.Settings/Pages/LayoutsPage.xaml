@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="EnhancedSnap.Settings.Pages.LayoutsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:EnhancedSnap.Settings.Pages"
+    xmlns:controls="using:EnhancedSnap.Settings.Controls"
+    xmlns:toolkit="using:CommunityToolkit.WinUI.Controls">
+
+    <ScrollViewer>
+        <Grid Margin="{StaticResource PageContentMargin}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MaxWidth="{StaticResource PageMaxWidth}" />
+            </Grid.ColumnDefinitions>
+        <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+            <TextBlock Margin="0,24,0,0" Style="{StaticResource TitleTextBlockStyle}" Text="{x:Bind S.Nav_Layouts}" />
+            <TextBlock Margin="0,4,0,8" Style="{StaticResource PageDescriptionTextBlockStyle}" Text="{x:Bind S.Layouts_Desc}" />
+
+            <!-- Displays -->
+            <TextBlock Style="{StaticResource SectionHeaderTextBlockStyle}" Margin="1,16,0,8" Text="{x:Bind S.Layouts_Display}" />
+            <GridView
+                x:Name="DisplayGrid"
+                IsItemClickEnabled="False"
+                SelectionChanged="DisplayGrid_SelectionChanged"
+                SelectionMode="Single">
+                <GridView.ItemTemplate>
+                    <DataTemplate x:DataType="local:DisplayItem">
+                        <Grid Width="232" Padding="14,12" ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon VerticalAlignment="Center" FontSize="24" Glyph="&#xE7F4;" />
+                            <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Details}" />
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </GridView.ItemTemplate>
+            </GridView>
+
+            <!-- Templates -->
+            <Grid Margin="1,20,0,8">
+                <TextBlock VerticalAlignment="Center" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind S.Layouts_Templates}" />
+                <Button HorizontalAlignment="Right" Click="PreviewButton_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="14" Glyph="&#xECA5;" />
+                        <TextBlock Text="{x:Bind S.Action_PreviewZones}" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+            <GridView
+                x:Name="LayoutGrid"
+                SelectionChanged="LayoutGrid_SelectionChanged"
+                SelectionMode="Single">
+                <GridView.ItemTemplate>
+                    <DataTemplate x:DataType="local:LayoutItem">
+                        <StackPanel Width="176" Padding="8,8,8,10" Spacing="8">
+                            <Border
+                                Width="160"
+                                Height="{x:Bind PreviewHeight}"
+                                Background="{ThemeResource ControlAltFillColorTertiaryBrush}"
+                                BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6">
+                                <controls:LayoutPreview AspectRatio="{x:Bind Aspect}" Layout="{x:Bind Definition}" ReferenceWidthEpx="560" GapEpx="8" MarginEpx="8" CornerRadiusEpx="4" />
+                            </Border>
+                            <StackPanel Spacing="0">
+                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Details}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </DataTemplate>
+                </GridView.ItemTemplate>
+            </GridView>
+            <TextBlock Margin="1,4,0,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind S.Layouts_PreviewHint}" />
+
+            <!-- Custom layouts -->
+            <TextBlock Style="{StaticResource SectionHeaderTextBlockStyle}" Text="{x:Bind S.Layouts_Custom}" />
+            <toolkit:SettingsCard Description="{x:Bind S.Layouts_CustomDesc}" Header="{x:Bind S.Layouts_Custom}">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE70F;" /></toolkit:SettingsCard.HeaderIcon>
+                <Button Click="NewLayout_Click" Style="{StaticResource AccentButtonStyle}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="14" Glyph="&#xE710;" />
+                        <TextBlock Text="{x:Bind S.Action_NewLayout}" />
+                    </StackPanel>
+                </Button>
+            </toolkit:SettingsCard>
+            <StackPanel x:Name="CustomList" Spacing="{StaticResource SettingsCardSpacing}" />
+            <TextBlock
+                x:Name="CustomEmpty"
+                Margin="1,4,0,0"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Text="{x:Bind S.Layouts_CustomEmpty}" />
+        </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>

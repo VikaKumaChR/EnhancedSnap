@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  MSIX package manifest for the Microsoft Store (template; keep this file ASCII). packaging/build-msix.ps1 replaces
+  the dollar-sign tokens: the identity from packaging/store-identity.json (Partner Center: Product identity), the
+  version and architecture from build.ps1, and the Windows App SDK classes the settings app activates (the runtime is
+  self-contained, so the package registers them).
+  The logos come from packaging/Images (tools/make_icons.py); resources.pri resolves their scale, target-size and
+  theme variants.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap10 desktop rescap">
+
+  <Identity Name="$IdentityName$" Publisher="$Publisher$" Version="$Version$" ProcessorArchitecture="$Architecture$" />
+
+  <Properties>
+    <DisplayName>Enhanced Snap</DisplayName>
+    <PublisherDisplayName>$PublisherDisplayName$</PublisherDisplayName>
+    <Logo>Images\StoreLogo.png</Logo>
+    <Description>Snap windows with rounded corners and even spacing: a Windows Snap replacement for Windows 11.</Description>
+  </Properties>
+
+  <Dependencies>
+    <!-- Windows 11 only: rounded window corners (DWMWA_WINDOW_CORNER_PREFERENCE) start with build 22000. -->
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.22000.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-US" />
+    <Resource Language="zh-Hant" />
+    <Resource Language="zh-Hans" />
+  </Resources>
+
+  <Applications>
+    <!-- The engine is the app, as with the installer's Start menu shortcut: started again while it runs, it opens
+         Settings. EnhancedSnap.Settings.exe runs as its child, inside the package. -->
+    <Application Id="EnhancedSnap" Executable="EnhancedSnap.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="Enhanced Snap"
+        Description="Snap windows with rounded corners and even spacing"
+        BackgroundColor="transparent"
+        Square150x150Logo="Images\MedTile.png"
+        Square44x44Logo="Images\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Images\WideTile.png" Square71x71Logo="Images\SmallTile.png" Square310x310Logo="Images\LargeTile.png" />
+        <uap:SplashScreen Image="Images\SplashScreen.png" />
+      </uap:VisualElements>
+      <Extensions>
+        <!-- Launch at sign-in (listed in Settings > Apps > Startup). Enabled once the app has run; the app's own
+             switch drives it through Windows.ApplicationModel.StartupTask (Core/Platform/StartupRegistration.cs). -->
+        <desktop:Extension Category="windows.startupTask" Executable="EnhancedSnap.exe" EntryPoint="Windows.FullTrustApplication" uap10:Parameters="--startup">
+          <desktop:StartupTask TaskId="EnhancedSnapStartup" Enabled="true" DisplayName="Enhanced Snap" />
+        </desktop:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+
+  <Extensions>
+$WindowsAppSdkClasses$
+  </Extensions>
+</Package>

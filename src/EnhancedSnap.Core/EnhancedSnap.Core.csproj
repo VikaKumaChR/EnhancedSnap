@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Shared, UI-free library used by both the background engine (EnhancedSnap.exe)
+    and the WinUI 3 settings app (EnhancedSnap.Settings.exe):
+    settings model + JSON, layout catalog, zone geometry, display enumeration,
+    localization, IPC constants and small Win32 helpers.
+  -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>EnhancedSnap.Core</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EnhancedSnap.Core.Tests" />
+  </ItemGroup>
+
+</Project>

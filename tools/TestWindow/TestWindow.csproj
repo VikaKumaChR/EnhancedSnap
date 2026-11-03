@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Disposable window used by tools/*.ps1 to exercise the engine on a live desktop. Not shipped. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <AssemblyName>EnhancedSnap.TestWindow</AssemblyName>
+    <RootNamespace>EnhancedSnap.TestWindow</RootNamespace>
+  </PropertyGroup>
+
+</Project>

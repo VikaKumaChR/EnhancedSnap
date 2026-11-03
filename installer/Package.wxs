@@ -1,0 +1,101 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Package Name="Enhanced Snap"
+           Manufacturer="Enhanced Snap"
+           Version="$(ProductVersion)"
+           UpgradeCode="581B8709-7EC0-4F79-808C-B8CCFA467DA7"
+           Scope="perUser"
+           Compressed="yes"
+           Language="1033">
+
+    <SummaryInformation Description="Enhanced Snap – the Windows Snap replacement for Windows 11" />
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="A newer version of Enhanced Snap is already installed." />
+    <!-- The development previews (numbered 1.0.0 to 2.3.0 before the public 1.0) used another upgrade code:
+         remove any of them, whatever its number, the way MajorUpgrade removes an older release. -->
+    <Upgrade Id="7E4B9C2A-3F51-4D8E-9A61-5C2B8D0E4F17">
+      <UpgradeVersion Minimum="0.0.0" IncludeMinimum="yes" Property="ENHANCEDSNAPPREVIEW" />
+    </Upgrade>
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <!-- Windows 11 only (build 22000+). MSI's VersionNT is frozen at 603 on Windows 10/11, so read the build. -->
+    <Property Id="WINBUILD">
+      <RegistrySearch Id="WindowsBuildSearch" Root="HKLM" Key="SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+                      Name="CurrentBuildNumber" Type="raw" />
+    </Property>
+    <Launch Condition="Installed OR WINBUILD &gt;= 22000"
+            Message="Enhanced Snap requires Windows 11 (build 22000 or later)." />
+
+    <Icon Id="AppIcon" SourceFile="$(AssetsDir)EnhancedSnap.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Enhanced Snap" />
+      </Directory>
+    </StandardDirectory>
+
+    <!-- Everything produced by build.ps1 (engine, settings app, self-contained Windows App SDK, assets). -->
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(PublishDir)**">
+        <Exclude Files="$(PublishDir)**\*.pdb" />
+      </Files>
+    </ComponentGroup>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenuShortcut">
+        <Shortcut Id="AppShortcut"
+                  Name="Enhanced Snap"
+                  Description="Snap windows with rounded corners and even spacing"
+                  Target="[INSTALLFOLDER]EnhancedSnap.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="AppIcon" />
+        <RegistryValue Root="HKCU" Key="Software\EnhancedSnap" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <!-- Launch at sign-in (the app's "Launch at sign-in" switch edits the same value). -->
+    <Component Id="RunAtSignIn" Directory="INSTALLFOLDER">
+      <RegistryValue Root="HKCU" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="EnhancedSnap"
+                     Type="string" Value="&quot;[INSTALLFOLDER]EnhancedSnap.exe&quot; --startup" KeyPath="yes" />
+    </Component>
+
+    <!-- Remove folders left behind (e.g. empty language folders) on uninstall. User settings are kept. -->
+    <Component Id="CleanupInstallFolder" Directory="INSTALLFOLDER">
+      <RegistryValue Root="HKCU" Key="Software\EnhancedSnap" Name="InstallFolder" Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
+      <util:RemoveFolderEx On="uninstall" Property="INSTALLFOLDER" />
+      <RemoveFolder Id="RemoveProgramsFolderIfEmpty" Directory="ProgramsFolder" On="uninstall" />
+    </Component>
+
+    <!-- Ask running instances to exit (WM_CLOSE) before files are replaced; terminate if they don't. -->
+    <util:CloseApplication Id="CloseEngine" Target="EnhancedSnap.exe" CloseMessage="yes" RebootPrompt="no" TerminateProcess="0" Timeout="5" />
+    <util:CloseApplication Id="CloseSettings" Target="EnhancedSnap.Settings.exe" CloseMessage="yes" RebootPrompt="no" TerminateProcess="0" Timeout="5" />
+
+    <!-- Start the engine after an interactive install. First run opens Settings with a welcome tip. -->
+    <CustomAction Id="LaunchEnhancedSnap" Directory="INSTALLFOLDER"
+                  ExeCommand="&quot;[INSTALLFOLDER]EnhancedSnap.exe&quot;"
+                  Return="asyncNoWait" Execute="immediate" Impersonate="yes" />
+    <!-- Uninstall safety net: if Enhanced Snap could not restore Windows Snap itself (e.g. it crashed), do it now.
+         Immediate custom actions run before the file-removal script executes, so the exe is still present. -->
+    <CustomAction Id="RestoreWindowsSnap" Directory="INSTALLFOLDER"
+                  ExeCommand="&quot;[INSTALLFOLDER]EnhancedSnap.exe&quot; --restore-snap"
+                  Return="ignore" Execute="immediate" Impersonate="yes" />
+
+    <InstallExecuteSequence>
+      <Custom Action="RestoreWindowsSnap" After="InstallInitialize" Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+      <Custom Action="LaunchEnhancedSnap" After="InstallFinalize" Condition="NOT Installed AND NOT REMOVE AND UILevel &gt;= 4" />
+    </InstallExecuteSequence>
+
+    <Feature Id="Main" Title="Enhanced Snap" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="RunAtSignIn" />
+      <ComponentRef Id="CleanupInstallFolder" />
+    </Feature>
+
+    <!-- UPDATE: Sign the MSI and binaries (Authenticode) to avoid SmartScreen prompts; add a winget manifest.
+         The Microsoft Store channel is the MSIX built from packaging/ (signed by the Store). -->
+  </Package>
+</Wix>

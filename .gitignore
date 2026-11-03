@@ -1,0 +1,14 @@
+bin/
+obj/
+artifacts/
+*.user
+*.suo
+.vs/
+*.wixpdb
+TestResults/
+__pycache__/
+
+# Private working material: problem screenshots and recordings stay out of the public repository.
+ProbScreenshots/
+desktop.ini
+*.log

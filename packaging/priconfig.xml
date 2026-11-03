@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  makepri configuration for the Store package's resources.pri (packaging/build-msix.ps1). It indexes a staging folder
+  that holds only:
+    Images\                     the package logos, their scale-*, targetsize-* and altform-* variants as qualifiers
+                                (named Files/Images/..., as the manifest refers to them);
+    EnhancedSnap.Settings.pri   the settings app's own index (its XAML and assets, the WinUI resources), which a
+                                packaged app reads from resources.pri.
+-->
+<resources targetOsVersion="10.0.0" majorVersion="1">
+  <index root="\" startIndexAt="\">
+    <default>
+      <qualifier name="Language" value="en-US" />
+      <qualifier name="Contrast" value="standard" />
+      <qualifier name="Scale" value="100" />
+      <qualifier name="HomeRegion" value="001" />
+      <qualifier name="TargetSize" value="256" />
+      <qualifier name="LayoutDirection" value="LTR" />
+      <qualifier name="Theme" value="dark" />
+      <qualifier name="AlternateForm" value="" />
+      <qualifier name="DXFeatureLevel" value="DX9" />
+      <qualifier name="Configuration" value="" />
+      <qualifier name="DeviceFamily" value="Universal" />
+      <qualifier name="Custom" value="" />
+    </default>
+    <indexer-config type="folder" foldernameAsQualifier="true" filenameAsQualifier="true" qualifierDelimiter="." />
+    <indexer-config type="PRI" />
+  </index>
+</resources>

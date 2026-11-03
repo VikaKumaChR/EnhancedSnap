@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    EnhancedSnap.exe — the always-running background engine (tray icon, hooks, zones overlay).
+    Deliberately has no UI framework: NativeAOT + Win32 + Windows.UI.Composition keeps idle memory
+    and wake-ups minimal. The settings UI lives in a separate, on-demand WinUI 3 process.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>EnhancedSnap</AssemblyName>
+    <RootNamespace>EnhancedSnap.Engine</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\..\assets\EnhancedSnap.ico</ApplicationIcon>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+
+    <PublishAot>true</PublishAot>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- No COM activation through IDispatch etc.; CsWinRT handles WinRT objects. -->
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EnhancedSnap.Core\EnhancedSnap.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\assets\EnhancedSnap.ico;..\..\assets\Tray*.ico" Link="Assets\%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

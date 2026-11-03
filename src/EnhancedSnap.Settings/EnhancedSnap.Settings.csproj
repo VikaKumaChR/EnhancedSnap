@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    EnhancedSnap.Settings.exe — WinUI 3 (Windows App SDK) settings app, Fluent 2 by construction:
+    Mica backdrop, NavigationView, SettingsCard. Runs only while open, so the always-on engine never
+    carries the XAML framework in memory. Unpackaged + self-contained: no runtime installer needed.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>EnhancedSnap.Settings</AssemblyName>
+    <RootNamespace>EnhancedSnap.Settings</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\..\assets\EnhancedSnap.ico</ApplicationIcon>
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+
+    <PublishAot>true</PublishAot>
+    <SelfContained>true</SelfContained>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260921001" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
+
+  </ItemGroup>
+
+  <!--
+    The 1.8 self-contained payload (extracted from the runtime MSIX) also carries Windows AI / ML
+    (onnxruntime, DirectML, NPU workloads) and Widgets: ~45 MB a settings window never loads.
+    Drop them from the payload items right after the SDK adds them (works for both the MSIX and the
+    component-package code paths of Microsoft.WindowsAppSDK.SelfContained.targets).
+    UPDATE: revisit when moving to Windows App SDK 2.x component packages.
+  -->
+  <PropertyGroup>
+    <UnusedWindowsAppSdkPayloadPattern>^(onnxruntime.*|DirectML\.dll|Microsoft\.Windows\.(AI|Widgets|Workloads|Private\.Workloads|Vision|VisionInternal|Internal\.Vision|SemanticSearch)(\..*)?|workloads.*\.json)$</UnusedWindowsAppSdkPayloadPattern>
+  </PropertyGroup>
+  <Target Name="ExcludeUnusedWindowsAppSdkPayload"
+          AfterTargets="AddMicrosoftWindowsAppSDKPayloadFilesFromMsix;AddMicrosoftWindowsAppSDKPayloadFilesFromComponents">
+    <ItemGroup>
+      <None Remove="@(None)" Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(Filename)%(Extension)', '$(UnusedWindowsAppSdkPayloadPattern)')) or $([System.String]::Copy('%(None.Link)').StartsWith('NpuDetect'))" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EnhancedSnap.Core\EnhancedSnap.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\assets\EnhancedSnap.ico;..\..\assets\AppIcon-16.png;..\..\assets\AppIcon-20.png;..\..\assets\AppIcon-24.png;..\..\assets\AppIcon-28.png;..\..\assets\AppIcon-32.png;..\..\assets\AppIcon-36.png;..\..\assets\AppIcon-40.png;..\..\assets\AppIcon-48.png;..\..\assets\AppIcon-256.png" Link="Assets\%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>
