@@ -48,7 +48,17 @@ public sealed partial class GeneralPage : Page
     }
 
     // Engine state is re-checked when the window regains focus — no polling while it sits in the background.
-    private void OnWindowActivated(object sender, WindowActivatedEventArgs args) => RefreshStatus();
+    // So is sign-in start, which can change in Windows Settings (the info bar's button sends the user there).
+    private void OnWindowActivated(object sender, WindowActivatedEventArgs args)
+    {
+        RefreshStatus();
+        if (args.WindowActivationState != WindowActivationState.Deactivated)
+        {
+            bool startup = Vm.LaunchAtStartup;
+            StartupSwitch.IsOn = startup;
+            StartupBlockedBar.IsOpen &= !startup;
+        }
+    }
 
     private void OnSettingsChanged(object? sender, PropertyChangedEventArgs e)
     {

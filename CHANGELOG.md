@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.1 — 2026-11-05
+
+Fixes from testing the Microsoft Store package on a real install.
+
+- **Launch at sign-in follows Windows**: when you come back to Enhanced Snap after changing it in Windows Settings or
+  Task Manager, the switch and its message update right away, without leaving the page.
+- **Store package: the icon in Windows' lists**: lists such as *Settings → Apps → Startup* draw the icon on a plate in
+  your accent colour. The icon now takes two thirds of the plate, like other packaged apps, instead of filling it edge
+  to edge with the plate showing only in its open corner. The taskbar and Start are unchanged.
+
 ## 1.0.0 — 2026-11-02
 
 First public release: **Enhanced Snap replaces Windows Snap** on Windows 11 — the same gestures, flyout, Snap Assist

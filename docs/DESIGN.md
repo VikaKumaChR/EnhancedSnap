@@ -135,6 +135,9 @@ records that we turned it off; the previous value is restored on pause, quit, un
 crash, and by the uninstaller (`--restore-snap`). If the user re-enables Snap externally, we stand down. The Store
 package can't run anything at uninstall, so there the switch is changed for the sign-in only (no
 `SPIF_UPDATEINIFILE`): the saved value never changes, and signing out restores it whatever happened to the app.
+Checked on a registered package: with the in-memory change alone, Win + Left and dragging to an edge stop snapping,
+Win + Z shows no flyout, and Windows Settings shows *Snap windows* off; removing the app while it runs closes it, so
+it restores the switch itself.
 
 ### Snap groups
 
@@ -286,8 +289,10 @@ app; `packaging/Images/` for the MSIX), to Windows 11's app-icon guidelines:
   becomes a one-pixel gap around the front window. The ICO has frames from 16 to 256 px for every DPI; the settings
   title bar loads the PNG made for its display scale (16–48 px); the paused tray icon is the same art in Fluent
   neutrals.
-- **Store**: `Square44x44Logo` at target sizes 16–256 (plain, `altform-unplated`, `altform-lightunplated`); tiles,
-  Store logo and splash screen at scales 100–400.
+- **Store**: `Square44x44Logo` at target sizes 16–256. The `altform-unplated` and `altform-lightunplated` variants
+  (taskbar, Start) are the art itself. The plain variant is what lists such as *Settings → Apps → Startup* draw on a
+  plate in the user's accent colour, so it keeps the art at two thirds of the plate; edge to edge, the plate would only
+  show in the art's open corner and look like a mistake. Tiles, Store logo and splash screen at scales 100–400.
 
 ## 9. Distribution
 

@@ -14,7 +14,8 @@ Construction rules followed (learn.microsoft.com/windows/apps/design/iconography
     (checked and printed below).
   * Below 48 px the icon is simplified per size (Fluent: "use icons at specific sizes rather than scaling them"):
     edges snapped to whole pixels, shadow replaced by a one-pixel cut-out around the front window.
-  * Transparent background (unplated); Windows' theme variants (altform-unplated / lightunplated) are the same art.
+  * Transparent background. The altform-unplated / lightunplated variants (taskbar, Start) are the art itself; the plain
+    target-size variant is what Windows draws on a plate in lists such as Settings > Apps > Startup, so it is inset.
 
 Usage:  python tools/make_icons.py          (writes assets/ and packaging/Images/)
 """
@@ -230,17 +231,28 @@ def plated(width: int, height: int, scale: float, icon_size: int) -> Image.Image
     return canvas
 
 
+def for_plate(size: int) -> Image.Image:
+    """The plain app-list asset: Windows draws it on a plate (the accent colour, BackgroundColor being transparent).
+    The art takes two thirds of the plate, as in other packaged apps, so the plate frames it instead of filling its
+    open corner. The margin allows for the live area: the art itself covers 44/48 of what render() draws."""
+    margin = round(size * 3 / 22)
+    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    canvas.alpha_composite(render(size - 2 * margin), (margin, margin))
+    return canvas
+
+
 def package_assets() -> None:
     PACKAGE_ASSETS.mkdir(parents=True, exist_ok=True)
     for old in PACKAGE_ASSETS.glob("*.png"):
         old.unlink()
     scales = {100: 1.0, 125: 1.25, 150: 1.5, 200: 2.0, 400: 4.0}
-    for s in TARGET_SIZES:  # app list / taskbar / Start (unplated, so the theme variants are the same art)
+    for s in TARGET_SIZES:  # taskbar and Start use the unplated theme variants; lists plate the plain one
         image = render(s)
-        for suffix in ("", "_altform-unplated", "_altform-lightunplated"):
+        for suffix in ("_altform-unplated", "_altform-lightunplated"):
             image.save(PACKAGE_ASSETS / f"Square44x44Logo.targetsize-{s}{suffix}.png")
+        for_plate(s).save(PACKAGE_ASSETS / f"Square44x44Logo.targetsize-{s}.png")
     for scale, k in scales.items():
-        render(round(44 * k)).save(PACKAGE_ASSETS / f"Square44x44Logo.scale-{scale}.png")
+        for_plate(round(44 * k)).save(PACKAGE_ASSETS / f"Square44x44Logo.scale-{scale}.png")
         render(round(50 * k)).save(PACKAGE_ASSETS / f"StoreLogo.scale-{scale}.png")
         plated(71, 71, k, 44).save(PACKAGE_ASSETS / f"SmallTile.scale-{scale}.png")
         plated(150, 150, k, 84).save(PACKAGE_ASSETS / f"MedTile.scale-{scale}.png")

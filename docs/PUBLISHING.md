@@ -100,3 +100,15 @@ Get-AppxPackage *EnhancedSnap* | Remove-AppxPackage                           # 
 Check once per release: first start from Start (Settings opens with the welcome tip), launch at sign-in (listed in
 *Settings → Apps → Startup*, survives sign-out), dragging to the edges with Windows Snap replaced, quitting restores
 Windows Snap, snap groups in taskbar previews / Alt + Tab / Task View, *About → Open settings folder*, and uninstalling.
+
+For the test tools, an exe started by its path runs outside the package. Start the engine inside it, in test mode, and
+then run `tools/grouptest.ps1` or `tools/switchertest.ps1` as usual:
+
+```powershell
+$p = Get-AppxPackage EnhancedSnap
+$cmd = "`$env:ENHANCEDSNAP_TEST_WINDOW_TITLE='EnhancedSnap Test Window'; & '$($p.InstallLocation)\EnhancedSnap.exe' --verbose"
+Invoke-CommandInDesktopPackage -AppId EnhancedSnap -PackageFamilyName $p.PackageFamilyName -Command powershell.exe -Args "-NoProfile -WindowStyle Hidden -Command $cmd"
+```
+
+Started from Start instead, the engine reads `%LOCALAPPDATA%\Packages\<family>\LocalCache\Local\EnhancedSnap\settings.json`
+first, so a seed file there (with your open apps in `excludedApps`) keeps real settings and windows out of the test.
