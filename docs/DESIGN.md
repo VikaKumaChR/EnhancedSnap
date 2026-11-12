@@ -310,7 +310,8 @@ app; `packaging/Images/` for the MSIX), to Windows 11's app-icon guidelines:
 ## 10. Testing
 
 - `tests/EnhancedSnap.Core.Tests`: zone geometry, gaps at several DPIs, spanning, keyboard navigation, custom
-  layouts, settings JSON round-trip and normalization, exclusion rules, translation completeness.
+  layouts, settings JSON round-trip and normalization, exclusion rules, translation completeness, and a source check
+  that every clickable settings card is a `ClickableSettingsCard` (the toolkit's own card fails UI Automation Invoke).
 - `tools/placetest.ps1`: live placement and Win+Arrow test against a running engine in **test mode**
   (`ENHANCEDSNAP_TEST_WINDOW_TITLE` — the engine then touches only the disposable test window).
 - `tools/probe.ps1`: preview zones / capture screenshots; `tools/movetest.ps1`: keyboard move-loop drag test.
