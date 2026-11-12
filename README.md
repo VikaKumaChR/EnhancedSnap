@@ -6,6 +6,8 @@
 
 <p align="center"><a href="../../releases/latest">Download</a> · <a href="README.zh-TW.md">正體中文</a> · <a href="docs/DESIGN.md">Design</a> · <a href="docs/ROADMAP.md">Roadmap</a> · <a href="CHANGELOG.md">Changelog</a> · <a href="PRIVACY.md">Privacy</a></p>
 
+<p align="center"><img src="docs/images/demo-snap.gif" width="800" alt="Notepad is dragged to the top of the screen and dropped on a layout in the snap bar. Snap Assist then fills the two other spaces with PowerShell and Command Prompt. All three windows keep rounded corners, with space between them."></p>
+
 ---
 
 ## Why
@@ -17,6 +19,31 @@ room.
 
 Enhanced Snap snaps windows into zones **with Fluent spacing between them, and keeps every window's 8 px
 rounded corners**, using an overlay that follows Windows 11's own materials and motion.
+
+<p align="center"><img src="docs/images/demo-compare.gif" width="800" alt="The top of the seam between two snapped windows, close up. With Windows Snap the corners are square and the windows touch (0 px). With Enhanced Snap the corners stay rounded and there are 8 px between the windows and the screen edge."></p>
+
+## In action
+
+Snapping puts the windows you have open side by side, so you can see and use several at once — a document next to a
+browser, say. Enhanced Snap keeps the way Windows does it and adds the rounded corners and the spacing.
+
+**Snap windows side by side.** Drag a window to the top of the screen and drop it on a layout in the snap bar (the
+animation at the top of this page). Snap Assist then shows your other open windows: click one for each space left.
+
+**Resize them together.** Point at the gap between two windows until a bar appears, then drag the bar. Every window
+along that gap resizes with it.
+
+<p align="center"><img src="docs/images/demo-divider.gif" width="800" alt="Three snapped windows. Dragging the bar in the gap between them resizes the windows on both sides at once, first up and down, then left and right; while dragging, the other windows show as wallpaper."></p>
+
+**Fill an empty space.** Closed a window in a group? Drag any other window over the empty space: a preview shows where
+it will go, and dropping it there adds it to the group.
+
+<p align="center"><img src="docs/images/demo-join.gif" width="800" alt="Notepad is closed, leaving the left half of a snap group empty. A Command Prompt window is dragged over the empty space, a preview appears, and the window drops into it."></p>
+
+**Bring a group back.** Windows you snapped together stay a group. It is listed as **Group | …** when you point at the
+app's taskbar button and in <kbd>Alt</kbd> + <kbd>Tab</kbd>; pick it to bring all of its windows back at once.
+
+<p align="center"><img src="docs/images/demo-groups.gif" width="800" alt="Pointing at the Command Prompt taskbar button shows a Group | Command Prompt preview with the arrangement. Alt + Tab lists the group as Group | Command Prompt too."></p>
 
 ## Replaces Windows Snap
 

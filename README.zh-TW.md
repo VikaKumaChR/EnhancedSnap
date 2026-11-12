@@ -6,6 +6,8 @@
 
 <p align="center"><a href="../../releases/latest">下載</a> · <a href="README.md">English</a> · <a href="docs/DESIGN.md">設計文件</a> · <a href="docs/ROADMAP.md">後續更新</a> · <a href="CHANGELOG.md">更新記錄</a> · <a href="PRIVACY.md">隱私權</a></p>
 
+<p align="center"><img src="docs/images/demo-snap.gif" width="800" alt="把記事本拖到螢幕頂端，放到貼齊列的版面配置上；接著貼齊輔助把 PowerShell 和命令提示字元放進另外兩個位置。三個視窗都保有圓角，彼此之間也有間距。"></p>
+
 ---
 
 ## 為什麼需要它
@@ -16,6 +18,29 @@ Windows 11 的視窗是圓角，Microsoft Edge 等應用程式也開始自行繪
 
 Enhanced Snap 讓視窗貼齊到**保有 Fluent 間距的區域，並保留每個視窗 8 px 的圓角**；
 貼齊時的疊加層也遵循 Windows 11 本身的材質與動態設計。
+
+<p align="center"><img src="docs/images/demo-compare.gif" width="800" alt="兩個貼齊視窗之間接縫的上端特寫：Windows 貼齊是直角，兩個視窗直接相接（0 px）；Enhanced Snap 保留圓角，視窗之間與螢幕邊緣都有 8 px 間距。"></p>
+
+## 實際操作
+
+「貼齊」就是把開著的視窗並排放好，讓你同時看到、使用好幾個視窗，例如一邊看文件、一邊開瀏覽器。
+Enhanced Snap 沿用 Windows 原本的操作方式，再加上圓角與間距。
+
+**把視窗並排。** 把視窗拖到螢幕頂端，放到貼齊列的版面配置上（就是本頁最上方的動畫）。
+接著貼齊輔助會列出其他開著的視窗，替每個剩下的位置各點一個。
+
+**一起調整大小。** 把指標移到兩個視窗之間的空隙，出現分隔條後拖曳它，沿著這條空隙的視窗會一起調整大小。
+
+<p align="center"><img src="docs/images/demo-divider.gif" width="800" alt="三個貼齊的視窗。拖曳它們之間空隙上的分隔條，兩側的視窗同時改變大小，先上下、再左右；拖曳時其他視窗會顯示為桌布。"></p>
+
+**補上空位。** 群組裡關掉了一個視窗？把任何視窗拖到空出來的位置上，會先預覽它會放在哪裡，放開就加入群組。
+
+<p align="center"><img src="docs/images/demo-join.gif" width="800" alt="關掉記事本後，貼齊群組的左半邊空了出來。把一個命令提示字元視窗拖到空位上，出現預覽，放開後視窗就填進去。"></p>
+
+**叫回整個群組。** 一起貼齊的視窗會成為一個群組。指標停在應用程式的工作列按鈕上，或按 <kbd>Alt</kbd>＋<kbd>Tab</kbd>，
+都會看到 **群組 \| …**；選它就能一次叫回群組的所有視窗。
+
+<p align="center"><img src="docs/images/demo-groups.gif" width="800" alt="指標停在命令提示字元的工作列按鈕上，預覽中出現帶有排列縮圖的 Group | Command Prompt；按 Alt + Tab 時群組也列為 Group | Command Prompt。"></p>
 
 ## 取代 Windows 貼齊
 
