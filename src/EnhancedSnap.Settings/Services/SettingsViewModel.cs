@@ -63,6 +63,19 @@ public sealed partial class SettingsViewModel : INotifyPropertyChanged
 
     public bool SnapBar { get => _settings.SnapBar; set => Set(_settings.SnapBar, value, v => _settings.SnapBar = v); }
 
+    /// <summary>The set the snap bar's pop down opens with (<see cref="SnapBarSet"/> order).</summary>
+    public int SnapBarStartIndex
+    {
+        get => (int)_settings.SnapBarLayouts.StartSet;
+        set => Set((int)_settings.SnapBarLayouts.StartSet, value, v => _settings.SnapBarLayouts.StartSet = (SnapBarSet)Math.Clamp(v, 0, 2));
+    }
+
+    public bool SnapBarShowHorizontal
+    {
+        get => _settings.SnapBarLayouts.ShowHorizontal;
+        set => Set(_settings.SnapBarLayouts.ShowHorizontal, value, v => _settings.SnapBarLayouts.ShowHorizontal = v);
+    }
+
     public bool SnapAssist { get => _settings.SnapAssist; set => Set(_settings.SnapAssist, value, v => _settings.SnapAssist = v); }
 
     public bool GroupFrame { get => _settings.GroupFrame; set => Set(_settings.GroupFrame, value, v => _settings.GroupFrame = v); }

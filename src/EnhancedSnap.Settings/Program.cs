@@ -18,6 +18,14 @@ public static class Program
         Log.Initialize("settings");
         WinRT.ComWrappersSupport.InitializeComWrappers();
 
+        // Installed (not packaged): the taskbar shows the window as "Enhanced Snap", grouped with the Start menu
+        // shortcut, instead of under the executable's name. It has to be set before the app shows any UI (Learn,
+        // Application User Model IDs). A package already has an ID of its own, which this would replace.
+        if (!AppInfo.IsPackaged && Win32.SetCurrentProcessExplicitAppUserModelID(AppInfo.AppUserModelId) is int hr and < 0)
+        {
+            Log.Warn($"SetCurrentProcessExplicitAppUserModelID failed: 0x{hr:X8}");
+        }
+
         var page = ParsePage(args);
         bool welcome = args.Any(a => string.Equals(a, "--welcome", StringComparison.OrdinalIgnoreCase));
 

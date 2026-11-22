@@ -338,7 +338,7 @@ internal sealed unsafe class ZoneOverlay : IDisposable
         if (_topmost)
         {
             // Drop topmost while hidden so the next drag can sit right under the dragged window.
-            SetWindowPos(Hwnd, -2 /* HWND_NOTOPMOST */, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+            SetWindowPos(Hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
             _topmost = false;
         }
 

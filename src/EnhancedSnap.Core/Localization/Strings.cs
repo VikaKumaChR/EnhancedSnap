@@ -92,6 +92,9 @@ public sealed partial class Strings
             LayoutCatalog.Quarters => Layout_Quarters,
             LayoutCatalog.Grid3x2 => Layout_Grid3x2,
             LayoutCatalog.Rows => Layout_Rows,
+            LayoutCatalog.TopTwoThirds => Layout_TopTwoThirds,
+            LayoutCatalog.TopMain => Layout_TopMain,
+            LayoutCatalog.ThreeRows => Layout_ThreeRows,
             LayoutCatalog.Full => Layout_Full,
             _ => layout.Id,
         };
@@ -174,9 +177,14 @@ public sealed partial class Strings
     // ---- Layouts
     public string Layouts_Desc => Get();
     public string Layouts_Display => Get();
+    public string Layouts_ZonesCaption => Get();
+    public string Layouts_ZonesCaptionAlways => Get();
+    public string Layouts_ScopeAll => Get();
+    public string Layouts_ScopeThis => Get();
     public string Layouts_PreviewHint => Get();
     public string Layouts_Templates => Get();
     public string Layouts_Custom => Get();
+    public string Layouts_MineCaption => Get();
     public string Layouts_CustomDesc => Get();
     public string Layouts_CustomEmpty => Get();
     public string Display_BuiltIn => Get();
@@ -194,10 +202,33 @@ public sealed partial class Strings
     public string Layout_Quarters => Get();
     public string Layout_Grid3x2 => Get();
     public string Layout_Rows => Get();
+    public string Layout_TopTwoThirds => Get();
+    public string Layout_TopMain => Get();
+    public string Layout_ThreeRows => Get();
     public string Layout_Full => Get();
     public string Layout_Custom => Get();
     public string Layout_ZoneCount => Get();
     public string Action_NewLayout => Get();
+
+    // ---- Snap bar pop down (suggestion00)
+    public string SnapBar_Classic => Get();
+    public string SnapBar_Horizontal => Get();
+    public string SnapBar_Custom => Get();
+    public string SnapBar_Header => Get();
+    public string SnapBar_HeaderDesc => Get();
+    public string SnapBar_HeaderDescAlways => Get();
+    public string SnapBar_StartSet => Get();
+    public string SnapBar_StartSetDesc => Get();
+    public string SnapBar_ClassicDesc => Get();
+    public string SnapBar_HorizontalDesc => Get();
+    public string SnapBar_CustomDesc => Get();
+    public string SnapBar_CustomEmpty => Get();
+    public string SnapBar_Count => Get();
+    public string SnapBar_AddLayout => Get();
+    public string SnapBar_NewLayout => Get();
+    public string SnapBar_BuiltIn => Get();
+    public string Action_MoveUp => Get();
+    public string Action_MoveDown => Get();
     public string Editor_Title => Get();
     public string Editor_Name => Get();
     public string Editor_DefaultName => Get();

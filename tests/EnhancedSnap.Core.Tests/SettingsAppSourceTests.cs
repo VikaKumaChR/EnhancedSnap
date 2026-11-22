@@ -21,6 +21,23 @@ public class SettingsAppSourceTests
         Assert.Empty(offenders);
     }
 
+    // Suggestion02: on the Content Layer every page keeps the same space left and right at any window width. A column
+    // with a MaxWidth, or a margin that isn't symmetric, brings back the wide gap on the right of large windows.
+    [Fact]
+    public void Every_page_sits_in_a_PageContentPanel()
+    {
+        string pages = Path.Combine(FindRepositoryRoot(), "src", "EnhancedSnap.Settings", "Pages");
+        var xaml = Directory.EnumerateFiles(pages, "*.xaml").ToDictionary(path => Path.GetFileName(path), File.ReadAllText);
+
+        Assert.NotEmpty(xaml);
+        Assert.All(xaml, page =>
+        {
+            Assert.Matches(@"<ScrollViewer>\s*<controls:PageContentPanel>", page.Value);
+            Assert.DoesNotContain("PageMaxWidth", page.Value);
+            Assert.DoesNotContain("PageContentMargin", page.Value);
+        });
+    }
+
     private static string FindRepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

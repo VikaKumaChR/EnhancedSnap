@@ -154,6 +154,7 @@ internal static unsafe partial class NativeMethods
     public const uint SWP_HIDEWINDOW = 0x0080;
     public const uint SWP_NOOWNERZORDER = 0x0200;
     public static readonly nint HWND_TOPMOST = -1;
+    public static readonly nint HWND_NOTOPMOST = -2;
 
     public const int SW_HIDE = 0;
     public const int SW_SHOWNORMAL = 1;
@@ -229,6 +230,7 @@ internal static unsafe partial class NativeMethods
     public const int VK_LMENU = 0xA4;
     public const int VK_RMENU = 0xA5;
     public const int VK_LBUTTON = 0x01;
+    public const int VK_RBUTTON = 0x02;
 
     // ---- Cursors / icons
     public const int IDC_ARROW = 32512;
@@ -246,6 +248,8 @@ internal static unsafe partial class NativeMethods
     public const uint HCF_HIGHCONTRASTON = 0x1;
     public const int SM_CXSMICON = 49;
     public const int SM_MENUDROPALIGNMENT = 40;
+    public const int SM_CXDRAG = 68;
+    public const int SM_CYDRAG = 69;
     public const int SM_REMOTESESSION = 0x1000;
     public const int COLOR_WINDOW = 5;
     public const int COLOR_WINDOWTEXT = 8;

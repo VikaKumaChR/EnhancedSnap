@@ -14,24 +14,34 @@ namespace EnhancedSnap.Engine.Ui;
 /// Base for Enhanced Snap's transient Fluent surfaces (snap layouts flyout, Snap Assist, groups flyout):
 /// a non-activating topmost popup whose corners and shadow are drawn by DWM (DWMWCP_ROUND + CS_DROPSHADOW),
 /// with an acrylic (host backdrop + tint) or solid panel rendered by the compositor.
+/// <para>
+/// A canvas popup (<c>canvas: true</c>) is a transparent, unrounded, shadowless window instead: the subclass draws its
+/// own panel, shadow included, and can move it inside the window (the snap bar's pop down slides in from the top).
+/// </para>
 /// </summary>
 internal abstract unsafe class PopupWindow : IDisposable
 {
     private const string ClassName = "EnhancedSnap.Popup";
+    private const string CanvasClassName = "EnhancedSnap.PopupCanvas";
     private static readonly Dictionary<nint, PopupWindow> Instances = [];
     private static bool _classRegistered;
+    private static bool _canvasClassRegistered;
 
     private readonly DesktopWindowTarget _target;
     private readonly List<CompositionDrawingSurface> _surfaces = [];
+    private readonly bool _canvas;
     private bool _trackingLeave;
 
-    protected PopupWindow(CompositionHost host)
+    protected PopupWindow(CompositionHost host, bool canvas = false)
     {
-        EnsureClass();
+        _canvas = canvas;
+        EnsureClass(canvas);
         C = host.Compositor;
+        // A canvas takes no input (the snap bar's pop down is driven by the dragged pointer, which the drag captures), so
+        // it is click-through like the zones overlay: its transparent margins and its exit never catch a click.
         Hwnd = CreateWindowEx(
-            WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_NOREDIRECTIONBITMAP,
-            ClassName,
+            WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_NOREDIRECTIONBITMAP | (canvas ? WS_EX_LAYERED | WS_EX_TRANSPARENT : 0),
+            canvas ? CanvasClassName : ClassName,
             "Enhanced Snap",
             WS_POPUP,
             0,
@@ -48,9 +58,14 @@ internal abstract unsafe class PopupWindow : IDisposable
         }
 
         Instances[Hwnd] = this;
+        if (canvas)
+        {
+            SetLayeredWindowAttributes(Hwnd, 0, 255, LWA_ALPHA);
+        }
+
         SetDwmInt(Hwnd, DWMWA_USE_HOSTBACKDROPBRUSH, 1);
         SetDwmInt(Hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, 1);
-        SetDwmInt(Hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND);
+        SetDwmInt(Hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, canvas ? DWMWCP_DONOTROUND : DWMWCP_ROUND);
         SetDwmInt(Hwnd, DWMWA_EXCLUDED_FROM_PEEK, 1);
 
         _target = host.CreateDesktopWindowTarget(Hwnd, isTopmost: false);
@@ -83,10 +98,19 @@ internal abstract unsafe class PopupWindow : IDisposable
 
         ClearContent();
         Root.Size = new Vector2(bounds.Width, bounds.Height);
-        BuildPanel(bounds.Width, bounds.Height);
+        if (!_canvas)
+        {
+            BuildPanel(bounds.Width, bounds.Height);
+        }
+
         Build(bounds.Width, bounds.Height);
 
-        if (theme.Animate && !IsVisible)
+        if (_canvas)
+        {
+            Root.Opacity = 1f; // the subclass moves and fades its own panel
+            Root.Offset = Vector3.Zero;
+        }
+        else if (theme.Animate && !IsVisible)
         {
             Root.Opacity = 0f;
             Root.Offset = new Vector3(0, 8 * scale, 0);
@@ -160,19 +184,29 @@ internal abstract unsafe class PopupWindow : IDisposable
     {
     }
 
+    /// <summary>A timer set on <see cref="Hwnd"/> fired.</summary>
+    protected virtual void OnTimer(nuint id)
+    {
+    }
+
     protected virtual bool IsInteractive(PointI screen) => true;
 
     protected float Px(float epx) => MathF.Round(epx * Scale);
 
     /// <summary>Shows a drawing surface at its pixel size; the surface is closed with the content.</summary>
-    protected void AddSurface(CompositionDrawingSurface? surface, Vector2 offset, Vector2 size)
+    protected void AddSurface(CompositionDrawingSurface? surface, Vector2 offset, Vector2 size) => AddSurfaceTo(Root, surface, offset, size);
+
+    /// <summary>Like <see cref="AddSurface"/>, in <paramref name="parent"/>; returns the sprite showing it.</summary>
+    protected SpriteVisual AddSurfaceTo(ContainerVisual parent, CompositionDrawingSurface? surface, Vector2 offset, Vector2 size)
     {
         if (surface is not null)
         {
             _surfaces.Add(surface);
         }
 
-        Root.Children.InsertAtTop(Shapes.Surface(C, surface, offset, size));
+        var sprite = Shapes.Surface(C, surface, offset, size);
+        parent.Children.InsertAtTop(sprite);
+        return sprite;
     }
 
     /// <summary>
@@ -205,19 +239,19 @@ internal abstract unsafe class PopupWindow : IDisposable
         Root.Children.InsertAtTop(panel);
     }
 
-    private static void EnsureClass()
+    private static void EnsureClass(bool canvas)
     {
-        if (_classRegistered)
+        if (canvas ? _canvasClassRegistered : _classRegistered)
         {
             return;
         }
 
-        fixed (char* name = ClassName)
+        fixed (char* name = canvas ? CanvasClassName : ClassName)
         {
             var wc = new WNDCLASSEXW
             {
                 cbSize = (uint)sizeof(WNDCLASSEXW),
-                style = CS_DROPSHADOW,
+                style = canvas ? 0 : CS_DROPSHADOW, // a canvas draws its own shadow, around its panel rather than the window
                 lpfnWndProc = &WndProc,
                 hInstance = GetModuleHandle(null),
                 hCursor = LoadCursor(0, IDC_ARROW),
@@ -226,7 +260,14 @@ internal abstract unsafe class PopupWindow : IDisposable
             RegisterClassExW(&wc);
         }
 
-        _classRegistered = true;
+        if (canvas)
+        {
+            _canvasClassRegistered = true;
+        }
+        else
+        {
+            _classRegistered = true;
+        }
     }
 
     [UnmanagedCallersOnly]
@@ -244,7 +285,7 @@ internal abstract unsafe class PopupWindow : IDisposable
                 case WM_MOUSEACTIVATE:
                     return MA_NOACTIVATE;
                 case WM_NCHITTEST:
-                    return HTCLIENT;
+                    return popup._canvas ? HTTRANSPARENT : HTCLIENT;
                 case WM_ERASEBKGND:
                     return 1;
                 case WM_DPICHANGED:
@@ -268,6 +309,9 @@ internal abstract unsafe class PopupWindow : IDisposable
                     return 0;
                 case WM_LBUTTONUP:
                     popup.OnReleased(ToScreen(popup, lParam));
+                    return 0;
+                case WM_TIMER:
+                    popup.OnTimer(wParam);
                     return 0;
             }
         }

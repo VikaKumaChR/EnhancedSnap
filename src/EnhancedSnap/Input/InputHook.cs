@@ -22,6 +22,9 @@ internal interface IInputPolicy
     /// <summary>A flyout or Snap Assist is open: route navigation keys and report outside clicks.</summary>
     bool PopupOpen { get; }
 
+    /// <summary>The snap bar's pop down is up while a window is dragged: the mouse wheel switches its sets.</summary>
+    bool SnapBarOpen { get; }
+
     /// <summary>The snap group proxy standing for this window in Alt + Tab and Task View, or 0.</summary>
     nint SwitcherProxy(nint hwnd);
 }
@@ -34,7 +37,8 @@ internal interface IInputPolicy
 /// <item>Keyboard: Win + Arrow, Win + Z, and Esc/Enter/arrows/Tab while an Enhanced Snap popup is open. Alt + Tab and
 /// Win + Tab pressed in a snap group window: the first Tab is held back until the engine has put the group first.</item>
 /// <item>Mouse: one timer reset per move; after the pointer rests 300 ms, a single WM_NCHITTEST asks the window
-/// under it whether that's its maximize button (HTMAXBUTTON) — the same contract Windows' own flyout uses.</item>
+/// under it whether that's its maximize button (HTMAXBUTTON) — the same contract Windows' own flyout uses. While the
+/// snap bar's pop down is up during a drag, the wheel is held back and switches its sets.</item>
 /// </list>
 /// </summary>
 internal sealed unsafe class InputHook : IDisposable
@@ -46,12 +50,14 @@ internal sealed unsafe class InputHook : IDisposable
     public const uint WM_APP_POINTERDOWN = WM_APP + 6;
     public const uint WM_APP_SWITCHER = WM_APP + 7;    // wParam 1 = Alt + Tab, 0 = Win + Tab; lParam = the group's proxy
     public const uint WM_APP_SWITCHEREND = WM_APP + 8; // Alt / Win released after a switcher we held a Tab for
+    public const uint WM_APP_SNAPBARWHEEL = WM_APP + 9; // wParam 1 = the snap bar's next set, 0 = the previous one
 
     /// <summary>dwExtraInfo tag on keys we inject ourselves ("ESNP").</summary>
     public const nuint InjectedMarker = 0x45534E50;
 
     private const nuint HoverTimerId = 7;
     private const uint HoverDelayMs = 300;
+    private const long WheelStepMs = 150; // a free-spinning wheel switches sets no faster than this
     private static InputHook? _instance;
 
     private readonly nint _target;
@@ -66,6 +72,8 @@ internal sealed unsafe class InputHook : IDisposable
     private bool _switcherOpen; // Alt + Tab / Win + Tab is up while its modifier is held: later Tabs just cycle
     private bool _switcherOurs; // ...and the engine put a group first
     private POINT _lastPoint;
+    private int _wheel;            // wheel travel towards the next set (+) or the previous one (−), in WHEEL_DELTA units
+    private long _lastWheelStep;
     private bool _wantKeyboard;
     private bool _wantMouse;
 
@@ -361,7 +369,10 @@ internal sealed unsafe class InputHook : IDisposable
         {
             try
             {
-                self.ProcessMouse((uint)wParam, (MSLLHOOKSTRUCT*)lParam);
+                if (self.ProcessMouse((uint)wParam, (MSLLHOOKSTRUCT*)lParam))
+                {
+                    return 1; // swallow
+                }
             }
             catch (Exception ex)
             {
@@ -372,14 +383,15 @@ internal sealed unsafe class InputHook : IDisposable
         return CallNextHookEx(0, nCode, wParam, lParam);
     }
 
-    private void ProcessMouse(uint message, MSLLHOOKSTRUCT* info)
+    /// <summary>Classifies a mouse event; true swallows it.</summary>
+    private bool ProcessMouse(uint message, MSLLHOOKSTRUCT* info)
     {
         switch (message)
         {
             case WM_MOUSEMOVE:
                 if (info->pt.X == _lastPoint.X && info->pt.Y == _lastPoint.Y)
                 {
-                    return;
+                    return false;
                 }
 
                 _lastPoint = info->pt;
@@ -399,7 +411,45 @@ internal sealed unsafe class InputHook : IDisposable
                 }
 
                 break;
+            case WM_MOUSEWHEEL:
+            case WM_MOUSEHWHEEL:
+                return ProcessWheel(message, info);
         }
+
+        return false;
+    }
+
+    /// <summary>
+    /// While the snap bar's pop down is up during a drag, the wheel switches its sets and is held back, so the window
+    /// under the pointer doesn't scroll: wheel down or tilt right for the next set, up or left for the previous one. One
+    /// step per notch (WHEEL_DELTA) however finely a precision wheel or touchpad reports it, and no faster than one
+    /// step per <see cref="WheelStepMs"/>.
+    /// </summary>
+    private bool ProcessWheel(uint message, MSLLHOOKSTRUCT* info)
+    {
+        // A window is dragged with a button held down (the physical right one when the buttons are swapped): without
+        // one, the wheel is never held back.
+        if (!_policy.SnapBarOpen || !(IsKeyDown(VK_LBUTTON) || IsKeyDown(VK_RBUTTON)))
+        {
+            _wheel = 0;
+            return false;
+        }
+
+        int delta = (short)(info->mouseData >> 16);
+        _wheel += message == WM_MOUSEHWHEEL ? delta : -delta;
+        if (Math.Abs(_wheel) >= WHEEL_DELTA)
+        {
+            long now = Environment.TickCount64;
+            if (now - _lastWheelStep >= WheelStepMs)
+            {
+                Win32.PostMessage(_target, WM_APP_SNAPBARWHEEL, _wheel > 0 ? 1u : 0u, 0);
+                _lastWheelStep = now;
+            }
+
+            _wheel = 0;
+        }
+
+        return true;
     }
 
     private void CheckHover()

@@ -4,7 +4,7 @@
 
 <p align="center">Windows 11 的 Windows 貼齊替代方案：相同的手勢、版面配置與貼齊群組，<br>再加上圓角、等距間隔與 Fluent 2 材質。</p>
 
-<p align="center"><a href="README.md">English</a> · <a href="docs/USAGE.zh-TW.md">使用方式</a> · <a href="docs/ENERGY.zh-TW.md">節能與渲染</a> · <a href="docs/LIMITATIONS.zh-TW.md">已知限制</a> · <a href="docs/DESIGN.md">設計文件</a> · <a href="docs/BUILDING.zh-TW.md">建置</a> · <a href="docs/ROADMAP.md">後續更新</a> · <a href="CHANGELOG.md">更新記錄</a> · <a href="PRIVACY.md">隱私權</a></p>
+<p align="center"><a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="docs/USAGE.zh-TW.md">使用方式</a> · <a href="docs/ENERGY.zh-TW.md">節能與渲染</a> · <a href="docs/LIMITATIONS.zh-TW.md">已知限制</a> · <a href="docs/DESIGN.md">設計文件</a> · <a href="docs/BUILDING.zh-TW.md">建置</a> · <a href="docs/ROADMAP.md">後續更新</a> · <a href="CHANGELOG.md">更新記錄</a> · <a href="PRIVACY.md">隱私權</a></p>
 
 <p align="center"><img src="docs/images/demo-compare.gif" width="800" alt="兩個貼齊視窗之間接縫的上端特寫：Windows 貼齊是直角，兩個視窗直接相接（0 px）；Enhanced Snap 保留圓角，視窗之間與螢幕邊緣都有 8 px 間距。"></p>
 
@@ -26,8 +26,9 @@ Enhanced Snap 執行時會**關閉 Windows 貼齊並由自己接手**；暫停�
 
 | Windows 貼齊 | Enhanced Snap |
 | :-: | :-: |
-| 最大化按鈕與 <kbd>Win</kbd>＋<kbd>Z</kbd> 的貼齊版面配置 | 相同的浮出視窗，提供 Windows 的版面配置與**貼齊建議**，外觀與 Windows 一致；停在區域上時還會在螢幕上預覽實際位置 |
-| 拖曳到側邊、角落、頂端；貼齊列 | 相同手勢，且視窗**保留圓角與間距** |
+| 最大化按鈕與 <kbd>Win</kbd>＋<kbd>Z</kbd> 的貼齊版面配置 | 相同的浮出視窗，提供 Windows 的版面配置與**貼齊建議**，外觀與 Windows 一致；停在區域上時還會在螢幕上預覽實際位置；**與貼齊列使用同一組版面配置** |
+| 拖曳到側邊、角落、頂端；貼齊列 | 相同手勢，且視窗**保留圓角與間距**；視窗拖近頂端時，貼齊列先在頂端露出一截，指標到達頂端中央再完整展開 |
+| 貼齊列永遠只有固定幾種版面配置 | **貼齊版面配置選單放您自己的版面配置**：預設、上下分割，以及最多 12 個的自訂組合；把指標停在組合名稱上即可切換，拖曳時也可轉動滑鼠滾輪 |
 | 貼齊輔助 | 在剩餘區域顯示其他視窗的即時縮圖，可用滑鼠或鍵盤選擇 |
 | 工作列預覽、<kbd>Alt</kbd>＋<kbd>Tab</kbd> 與工作檢視中的貼齊群組 | 相同的 **群組 \| …**：可從工作列預覽群組、按一下叫回整個群組，**按 X 會關閉群組中的所有視窗**；從群組的視窗切換時排在第一個 |
 | 群組中的空區域要等貼齊輔助再次出現才能補上 | **把任何視窗拖到空位上**，就會加入群組 |
@@ -38,7 +39,7 @@ Enhanced Snap 執行時會**關閉 Windows 貼齊並由自己接手**；暫停�
 ## 不只是 Windows 貼齊
 
 - **自訂間距**：可調整視窗之間與畫面邊緣的距離（依各顯示器 DPI 縮放），每個視窗的可見外框都會精準對齊區域。
-- **每個顯示器各自的版面配置**：11 種範本，從左右各半、三等分，到超寬螢幕的中央焦點與直式螢幕的上下排列，也可以自訂欄與列。
+- **每個顯示器各自的版面配置**：14 種範本，從左右各半、三等分，到超寬螢幕的中央焦點與直式螢幕的上下排列，也可以自訂欄與列。
 - **需要時才顯示區域**：拖曳時按住 <kbd>Shift</kbd> 顯示所有區域，再按住 <kbd>Ctrl</kbd> 可跨越多個區域。
 - **鍵盤**：<kbd>Win</kbd>＋方向鍵在區域間（以及跨顯示器）移動視窗；<kbd>Win</kbd>＋<kbd>↑</kbd> 以**圓角填滿**整個畫面（再按一次才最大化）。
 - **即時套用**：調整間距或版面配置時，已貼齊的視窗會立即重新排列；解析度、工作列或顯示器變更時也會保持在原區域。

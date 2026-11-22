@@ -1,5 +1,6 @@
 using EnhancedSnap.Core;
 using EnhancedSnap.Core.Diagnostics;
+using EnhancedSnap.Core.Platform;
 using static EnhancedSnap.Engine.Native.NativeMethods;
 
 namespace EnhancedSnap.Engine.Platform;
@@ -15,12 +16,17 @@ namespace EnhancedSnap.Engine.Platform;
 /// The Store package has no uninstall hook, so there the switch is changed for this sign-in only and never written
 /// to the user profile: removing the app while it runs leaves Windows Snap off until the next sign-in at most.
 /// </para>
+/// <para>
+/// The order of the steps lives in <see cref="WindowsSnapTakeover"/> (tested in EnhancedSnap.Core.Tests); this class
+/// only reads and sets the switch.
+/// </para>
 /// </summary>
 internal static unsafe class WindowsSnapOverride
 {
-    private static string MarkerPath => Path.Combine(AppInfo.DataDirectory, "windows-snap-replaced.marker");
+    private static readonly WindowsSnapTakeover Takeover = new(
+        Path.Combine(AppInfo.DataDirectory, "windows-snap-replaced.marker"), IsWindowsSnapOn, Set);
 
-    public static bool IsApplied { get; private set; }
+    public static bool IsApplied => Takeover.IsApplied;
 
     public static bool IsWindowsSnapOn()
     {
@@ -29,64 +35,16 @@ internal static unsafe class WindowsSnapOverride
     }
 
     /// <summary>Turn Windows Snap off if it is on. No-op when the user already had it off.</summary>
-    public static void Apply()
-    {
-        if (IsApplied)
-        {
-            return;
-        }
-
-        if (!IsWindowsSnapOn())
-        {
-            Log.Info("Windows Snap is already off; nothing to take over");
-            return;
-        }
-
-        try
-        {
-            Directory.CreateDirectory(AppInfo.DataDirectory);
-            File.WriteAllText(MarkerPath, DateTime.Now.ToString("O"));
-        }
-        catch (Exception ex)
-        {
-            Log.Warn($"Could not write the Windows Snap marker ({ex.Message}); not taking over");
-            return;
-        }
-
-        if (Set(enabled: false))
-        {
-            IsApplied = true;
-            Log.Info("Windows Snap turned off (Enhanced Snap replaces it)");
-        }
-        else
-        {
-            TryDeleteMarker();
-        }
-    }
+    public static void Apply() => Takeover.Apply();
 
     /// <summary>Give Windows Snap back (pause, exit, uninstall, crash recovery).</summary>
-    public static void Restore()
-    {
-        if (!IsApplied && !File.Exists(MarkerPath))
-        {
-            return;
-        }
-
-        Set(enabled: true);
-        IsApplied = false;
-        TryDeleteMarker();
-        Log.Info("Windows Snap restored");
-    }
+    public static void Restore() => Takeover.Restore();
 
     /// <summary>At startup: a marker without a live owner means the previous run did not get to restore.</summary>
-    public static void RecoverAfterCrash()
-    {
-        if (File.Exists(MarkerPath))
-        {
-            Log.Warn("Previous run did not restore Windows Snap; restoring now");
-            Restore();
-        }
-    }
+    public static void RecoverAfterCrash() => Takeover.RecoverAfterCrash();
+
+    /// <summary>SPI_SETWINARRANGING changed: stand down if someone else switched Windows Snap back on.</summary>
+    public static void OnSwitchChanged() => Takeover.OnSwitchChanged();
 
     private static bool Set(bool enabled)
     {
@@ -99,17 +57,5 @@ internal static unsafe class WindowsSnapOverride
         }
 
         return ok;
-    }
-
-    private static void TryDeleteMarker()
-    {
-        try
-        {
-            File.Delete(MarkerPath);
-        }
-        catch
-        {
-            // Harmless: the next start will restore again, which is idempotent.
-        }
     }
 }

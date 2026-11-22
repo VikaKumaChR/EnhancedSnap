@@ -28,3 +28,7 @@ Where Enhanced Snap stops short of Windows Snap or works differently, and why.
   included.
 - **Apps without the standard move loop.** Drags that don't use the standard Windows move loop (for example dragging a
   browser *tab* out, some games and remote-desktop clients) don't trigger zones.
+- **Dividers by touch.** A divider takes the pointer over the whole gap between two windows (8 epx with the default
+  spacing, never less than 6) and about 40 epx across at its ends. That suits a mouse, but along the seam it is narrower
+  than the 40 × 40 epx Microsoft's guidelines for targeting suggest for touch. A finger works it as the mouse does
+  (Windows turns touch a window doesn't handle into mouse input); it hasn't been tried on a touch screen yet.

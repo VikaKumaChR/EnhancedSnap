@@ -46,12 +46,16 @@
 
     <StandardDirectory Id="ProgramMenuFolder">
       <Component Id="StartMenuShortcut">
+        <!-- The settings window carries the same AppUserModelID (AppInfo.AppUserModelId): the taskbar groups it with
+             this shortcut, names it "Enhanced Snap" and pins this shortcut. -->
         <Shortcut Id="AppShortcut"
                   Name="Enhanced Snap"
                   Description="Snap windows with rounded corners and even spacing"
                   Target="[INSTALLFOLDER]EnhancedSnap.exe"
                   WorkingDirectory="INSTALLFOLDER"
-                  Icon="AppIcon" />
+                  Icon="AppIcon">
+          <ShortcutProperty Key="System.AppUserModel.ID" Value="EnhancedSnap.EnhancedSnap" />
+        </Shortcut>
         <RegistryValue Root="HKCU" Key="Software\EnhancedSnap" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </StandardDirectory>

@@ -8,6 +8,8 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <AssemblyName>EnhancedSnap.Settings</AssemblyName>
+    <!-- The file description the taskbar falls back to for the window's name (and Task Manager shows): not the assembly name. -->
+    <AssemblyTitle>Enhanced Snap</AssemblyTitle>
     <RootNamespace>EnhancedSnap.Settings</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\..\assets\EnhancedSnap.ico</ApplicationIcon>

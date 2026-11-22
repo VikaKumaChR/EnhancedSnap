@@ -313,7 +313,7 @@ internal sealed unsafe class GroupManager : IDividerOwner, ITaskbarGroupsHost, I
         var s = _settings();
         float scale = (float)display.Scale;
         var (inner, gap) = ZoneMath.Inner(display.WorkArea, display.Scale, s.Gap, s.Margin);
-        var (bounds, radius) = FrameGeometry(group, display, gap, scale);
+        var (bounds, radius, layerBounds) = FrameGeometry(group, display, inner, gap, scale);
 
         bool raise = raiseWith != 0;
         if (s.GroupFrame)
@@ -338,7 +338,7 @@ internal sealed unsafe class GroupManager : IDividerOwner, ITaskbarGroupsHost, I
             _layers[group.Id] = layer;
         }
 
-        layer.Update(bounds, Handles(group, inner, gap, scale), Theme, scale);
+        layer.Update(layerBounds, Handles(group, inner, gap, scale, layerBounds), Theme, scale);
         raise |= !layer.IsShown;
 
         if (raise)
@@ -509,8 +509,8 @@ internal sealed unsafe class GroupManager : IDividerOwner, ITaskbarGroupsHost, I
         _dragOthers = group.Members.Keys.Where(h => h != _dragLive).ToList();
 
         var s = _settings();
-        var (_, gap) = ZoneMath.Inner(monitor.Display.WorkArea, monitor.Display.Scale, s.Gap, s.Margin);
-        var (bounds, radius) = FrameGeometry(group, monitor.Display, gap, (float)monitor.Display.Scale);
+        var (inner, gap) = ZoneMath.Inner(monitor.Display.WorkArea, monitor.Display.Scale, s.Gap, s.Margin);
+        var (bounds, radius, _) = FrameGeometry(group, monitor.Display, inner, gap, (float)monitor.Display.Scale);
         layer.BeginDrag(_dragLive, bounds, radius, _dragOthers.Select(h => MemberRect(group, group.Members[h])).ToList());
         layer.MarkDragging(handle.Divider);
         EfficiencyMode.SetCurrentThreadHighQos(true);
@@ -620,7 +620,9 @@ internal sealed unsafe class GroupManager : IDividerOwner, ITaskbarGroupsHost, I
             MoveDividerTo(group, _dragDivider, fraction, monitor, exclude: 0, final: false, liveOnly: true);
             if (_layers.TryGetValue(group.Id, out var layer))
             {
-                var handle = Handles(group, inner, gap, (float)monitor.Display.Scale).FirstOrDefault(h => h.Divider == _dragDivider);
+                float scale = (float)monitor.Display.Scale;
+                var (_, _, layerBounds) = FrameGeometry(group, monitor.Display, inner, gap, scale);
+                var handle = Handles(group, inner, gap, scale, layerBounds).FirstOrDefault(h => h.Divider == _dragDivider);
                 layer.UpdateDrag(_dragOthers.Select(h => MemberRect(group, group.Members[h])).ToList(), handle);
             }
         }
@@ -735,40 +737,48 @@ internal sealed unsafe class GroupManager : IDividerOwner, ITaskbarGroupsHost, I
         _tracker.UpdateFrame(hwnd, final ? WindowPlacer.GetFrame(hwnd) ?? target : target);
     }
 
-    /// <summary>The base wraps the windows with the same spacing that separates them, clipped to the work area.</summary>
-    private (RectI Bounds, float Radius) FrameGeometry(SnapGroup group, DisplayInfo display, int gap, float scale)
+    /// <summary>
+    /// The base wraps the windows with the same spacing that separates them, clipped to the work area. The divider
+    /// layer reaches as far, or through the whole margin when that is wider (<paramref name="inner"/> is the work area
+    /// less the margin), so a cap where a divider runs to the edge of <paramref name="inner"/> runs through the margin
+    /// to the work area's edge, whatever the margin.
+    /// </summary>
+    private (RectI Bounds, float Radius, RectI Layer) FrameGeometry(SnapGroup group, DisplayInfo display, RectI inner, int gap, float scale)
     {
         var rects = ZoneRects(group);
         var union = ZoneMath.UnionOf(rects, group.OccupiedZones.Where(i => i < rects.Length).Distinct().ToArray());
         int padding = Math.Max(gap, (int)MathF.Round(6 * scale));
+        int reach = Math.Max(padding, inner.Left - display.WorkArea.Left);
         var bounds = union.Inflate(padding, padding, padding, padding).Intersect(display.WorkArea);
-        return (bounds, (8 * scale) + padding); // concentric with the windows' 8 px corners
+        var layer = union.Inflate(reach, reach, reach, reach).Intersect(display.WorkArea);
+        return (bounds, (8 * scale) + padding, layer); // concentric with the windows' 8 px corners
     }
 
-    private static List<DividerHandle> Handles(SnapGroup group, RectI inner, int gap, float scale)
+    /// <summary>
+    /// The group's dividers with their gaps, end caps and bars (V_Prob04: the ends of a gap are the divider's). Caps
+    /// avoid each member's zone and also its real frame as last placed, which can reach past the zone (an app's minimum
+    /// size, or one that keeps its own size); where such a frame reaches into a gap, the gap's strip avoids it too.
+    /// </summary>
+    private List<DividerHandle> Handles(SnapGroup group, RectI inner, int gap, float scale, RectI layer)
     {
-        var handles = new List<DividerHandle>();
-        int hitHalf = Math.Max((gap + 1) / 2, (int)MathF.Round(3 * scale)); // the gap itself (at least 6 epx)
-        int barHalf = Math.Max((gap / 2) + (int)MathF.Round(4 * scale), (int)MathF.Round(8 * scale)); // a little over the seam
-        foreach (var d in group.MemberDividers())
+        var rects = ZoneRects(group);
+        var zones = new List<RectI>(group.Members.Count);
+        var frames = new List<RectI>(group.Members.Count);
+        foreach (var (hwnd, indices) in group.Members)
         {
-            if (d.Orientation == DividerOrientation.Vertical)
+            var zone = ZoneMath.UnionOf(rects, indices.Where(i => i < rects.Length).ToArray());
+            if (!zone.IsEmpty)
             {
-                int x = (int)Math.Round(ZoneMath.FractionToGapCenter(d.Position, inner.Left, inner.Width, gap));
-                int y0 = inner.Top + (int)Math.Round(d.Start * (inner.Height + gap));
-                int y1 = inner.Top + (int)Math.Round(d.End * (inner.Height + gap)) - gap;
-                handles.Add(new DividerHandle(d, new RectI(x - hitHalf, y0, x + hitHalf, y1), new RectI(x - barHalf, y0, x + barHalf, y1)));
+                zones.Add(zone);
             }
-            else
+
+            if (_tracker.TryGet(hwnd, out var record) && !record.Frame.IsEmpty)
             {
-                int y = (int)Math.Round(ZoneMath.FractionToGapCenter(d.Position, inner.Top, inner.Height, gap));
-                int x0 = inner.Left + (int)Math.Round(d.Start * (inner.Width + gap));
-                int x1 = inner.Left + (int)Math.Round(d.End * (inner.Width + gap)) - gap;
-                handles.Add(new DividerHandle(d, new RectI(x0, y - hitHalf, x1, y + hitHalf), new RectI(x0, y - barHalf, x1, y + barHalf)));
+                frames.Add(record.Frame);
             }
         }
 
-        return handles;
+        return [.. DividerHitGeometry.Compute(group.MemberDividers(), zones, inner, gap, layer, scale, frames).Select(DividerHandle.From)];
     }
 
     private void HideSurfaces(SnapGroup group)

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using EnhancedSnap.Core.Layouts;
 
 namespace EnhancedSnap.Core.Settings;
 
@@ -66,6 +67,19 @@ public enum MotionMode
     Off,
 }
 
+/// <summary>A set of layouts in the snap bar's pop down (one tab).</summary>
+public enum SnapBarSet
+{
+    /// <summary>What Windows Snap offers for the screen (default snap).</summary>
+    Classic,
+
+    /// <summary>Top and bottom splits: halves, two-thirds on top, a main window above two, three rows.</summary>
+    Horizontal,
+
+    /// <summary>The user's own choice of layouts (customization).</summary>
+    Custom,
+}
+
 public enum LayoutOrientation
 {
     /// <summary>Tracks are columns (left → right); each column is split into rows.</summary>
@@ -119,6 +133,9 @@ public sealed class AppSettings
 
     /// <summary>Snap layouts bar at the top of the screen while dragging a window.</summary>
     public bool SnapBar { get; set; } = true;
+
+    /// <summary>The sets of layouts the snap bar's pop down offers, and the user's own.</summary>
+    public SnapBarSettings SnapBarLayouts { get; set; } = new();
 
     /// <summary>After snapping, offer the other open windows for the remaining zones.</summary>
     public bool SnapAssist { get; set; } = true;
@@ -182,6 +199,10 @@ public sealed class AppSettings
         }
 
         CustomLayouts.RemoveAll(static l => string.IsNullOrWhiteSpace(l.Id));
+        SnapBarLayouts ??= new SnapBarSettings();
+        var customIds = CustomLayouts.Select(static l => l.Id).ToHashSet(StringComparer.Ordinal);
+        SnapBarLayouts.Normalize(id => customIds.Contains(id)
+            || (LayoutCatalog.FindBuiltIn(id) is { } builtIn && builtIn.Id != LayoutCatalog.Full));
         Language ??= "";
         SchemaVersion = CurrentSchemaVersion;
     }
@@ -190,6 +211,44 @@ public sealed class AppSettings
     {
         var json = System.Text.Json.JsonSerializer.Serialize(this, SettingsJsonContext.Default.AppSettings);
         return System.Text.Json.JsonSerializer.Deserialize(json, SettingsJsonContext.Default.AppSettings)!;
+    }
+}
+
+/// <summary>
+/// The snap bar's pop down (drag a window to the top of the screen, suggestion00): it offers the classic set (default
+/// snap), the horizontal set and the user's custom set as tabs. Stored as layout ids; every layout is fractions of
+/// the work area (custom ones as relative track weights), never pixels, so a set fits any display, DPI or
+/// orientation.
+/// </summary>
+public sealed class SnapBarSettings
+{
+    /// <summary>Most layouts in the custom set: two rows of six.</summary>
+    public const int MaxCustomLayouts = 12;
+
+    /// <summary>The set the pop down opens with. One picked during a drag is kept until the engine restarts.</summary>
+    public SnapBarSet StartSet { get; set; } = SnapBarSet.Classic;
+
+    /// <summary>Offer the horizontal set.</summary>
+    public bool ShowHorizontal { get; set; } = true;
+
+    /// <summary>The custom set: built-in or custom layout ids, in order. Empty: the pop down has no custom tab.</summary>
+    public List<string> CustomLayoutIds { get; set; } = [];
+
+    /// <summary>Drops ids of layouts that don't exist (any more), duplicates and anything past the limit.</summary>
+    public void Normalize(Func<string, bool> exists)
+    {
+        if (!Enum.IsDefined(StartSet))
+        {
+            StartSet = SnapBarSet.Classic;
+        }
+
+        CustomLayoutIds = (CustomLayoutIds ?? [])
+            .Where(static id => !string.IsNullOrWhiteSpace(id))
+            .Select(static id => id.Trim())
+            .Where(exists)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(MaxCustomLayouts)
+            .ToList();
     }
 }
 

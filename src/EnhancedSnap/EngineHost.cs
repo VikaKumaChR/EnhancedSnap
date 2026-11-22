@@ -79,7 +79,7 @@ internal sealed unsafe class EngineHost : IDisposable
 
         _input = new InputHook(_hwnd, _engine);
         ApplyReplacement();
-        UpdateInput();
+        SyncWindowsSnap();
 
         EfficiencyMode.EnableForProcess();
         Log.Info($"Engine ready (replace Windows Snap={WindowsSnapOverride.IsApplied}, administrator={Elevation.IsElevated}, energy saver={_system.EnergySaverActive}, transparency={_system.TransparencyEnabled}, animations={_system.AnimationsEnabled})");
@@ -255,6 +255,10 @@ internal sealed unsafe class EngineHost : IDisposable
                 _engine?.OnSwitcherEnd();
                 return true;
 
+            case InputHook.WM_APP_SNAPBARWHEEL:
+                _engine?.OnSnapBarWheel(wParam != 0 ? 1 : -1);
+                return true;
+
             case IpcMessages.EngineSettingsChanged:
                 ReloadSettings();
                 return true;
@@ -329,7 +333,18 @@ internal sealed unsafe class EngineHost : IDisposable
                 return true;
 
             case WM_ENDSESSION when wParam != 0:
-                Dispose();
+                // Sign-out, shutdown, or Windows Installer's Restart Manager closing the engine at uninstall or upgrade
+                // (ENDSESSION_CLOSEAPP): give Windows Snap back and exit. Dispose stops this window from handling
+                // messages, so the follow-up WM_CLOSE could no longer end the loop.
+                try
+                {
+                    Dispose();
+                }
+                finally
+                {
+                    PostQuitMessage(0); // also when something after the restore failed (posting it first would leave WM_QUIT waiting while Dispose joins the hook thread)
+                }
+
                 return true;
 
             case WM_CLOSE:
@@ -393,11 +408,12 @@ internal sealed unsafe class EngineHost : IDisposable
             RefreshVisualState();
         }
 
-        if (action == SPI_SETWINARRANGING && WindowsSnapOverride.IsApplied && WindowsSnapOverride.IsWindowsSnapOn())
+        if (action == SPI_SETWINARRANGING)
         {
-            // The user switched Windows Snap back on in Settings: respect it and stand down.
-            Log.Info("Windows Snap was re-enabled externally; Enhanced Snap stops replacing it for this session");
-            WindowsSnapOverride.Restore();
+            // The user switched Windows Snap back on in Settings: respect it and stand down. This also arrives, inside
+            // the call, whenever Enhanced Snap sets the switch itself; WindowsSnapTakeover tells the two apart.
+            WindowsSnapOverride.OnSwitchChanged();
+            SyncWindowsSnap();
         }
     }
 
@@ -420,7 +436,7 @@ internal sealed unsafe class EngineHost : IDisposable
         _engine?.ApplySettings(settings);
         _tray?.SetPaused(!settings.Enabled);
         ApplyReplacement();
-        UpdateInput();
+        SyncWindowsSnap();
         Log.Info($"Settings reloaded (enabled={settings.Enabled}, replace={settings.ReplaceWindowsSnap}, gap={settings.Gap}, margin={settings.Margin})");
     }
 
@@ -455,6 +471,21 @@ internal sealed unsafe class EngineHost : IDisposable
         {
             Win32.PostMessage(settingsHost, IpcMessages.SettingsReload, 0, 0);
         }
+    }
+
+    /// <summary>
+    /// Tells the engine whether Windows Snap is on now — its snap bar, edges and flyout stand down while it is, so the
+    /// two never show at once — and installs only the input hooks that still have something to do.
+    /// </summary>
+    private void SyncWindowsSnap()
+    {
+        if (_disposed)
+        {
+            return; // Dispose's own restore broadcasts back here; the engine and the hooks go right after it
+        }
+
+        _engine?.OnWindowsSnapChanged(WindowsSnapOverride.IsWindowsSnapOn());
+        UpdateInput();
     }
 
     private void UpdateInput()

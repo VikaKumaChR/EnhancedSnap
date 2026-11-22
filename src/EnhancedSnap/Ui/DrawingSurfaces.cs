@@ -128,6 +128,49 @@ internal sealed unsafe class DrawingSurfaces : IDisposable
         }
     }
 
+    /// <summary>
+    /// How wide a line of text draws, in pixels (DirectWrite's layout metrics, the same font as <see cref="Text"/>), or
+    /// null when it can't be measured. Lets labels fit names whose length differs by language.
+    /// </summary>
+    public float? MeasureWidth(string text, float fontPx, bool semibold)
+    {
+        if (!IsAvailable || string.IsNullOrEmpty(text))
+        {
+            return null;
+        }
+
+        try
+        {
+            nint format = GetFormat((int)Math.Round(fontPx * 4), semibold ? 600 : 400, TextAlign.Leading);
+            nint layout;
+            fixed (char* p = text)
+            {
+                // IDWriteFactory::CreateTextLayout(string, length, format, maxWidth, maxHeight, layout) (slot 18)
+                ThrowIfFailed(((delegate* unmanaged<nint, char*, uint, nint, float, float, nint*, int>)Slot(_dwriteFactory, 18))(
+                    _dwriteFactory, p, (uint)text.Length, format, 100_000f, 1_000f, &layout));
+            }
+
+            try
+            {
+                // IDWriteTextLayout::GetMetrics (slot 60: after IDWriteTextFormat's 25 methods and its own 32 before it)
+                TextMetrics metrics;
+                ThrowIfFailed(((delegate* unmanaged<nint, TextMetrics*, int>)Slot(layout, 60))(layout, &metrics));
+                float width = metrics.WidthIncludingTrailingWhitespace;
+                return float.IsFinite(width) && width > 0 && width < 100_000f ? width : null;
+            }
+            finally
+            {
+                Marshal.Release(layout);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warn($"Text measure failed: {ex.Message}");
+            ReleaseIfDeviceLost(ex);
+            return null;
+        }
+    }
+
     /// <summary>Renders an HICON (premultiplied BGRA) at <paramref name="size"/> pixels.</summary>
     public CompositionDrawingSurface? Icon(nint hicon, int size)
     {
@@ -415,5 +458,20 @@ internal sealed unsafe class DrawingSurfaces : IDisposable
         public int Granularity;
         public uint Delimiter;
         public uint DelimiterCount;
+    }
+
+    /// <summary>DWRITE_TEXT_METRICS.</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    private struct TextMetrics
+    {
+        public float Left;
+        public float Top;
+        public float Width;
+        public float WidthIncludingTrailingWhitespace;
+        public float Height;
+        public float LayoutWidth;
+        public float LayoutHeight;
+        public uint MaxBidiReorderingDepth;
+        public uint LineCount;
     }
 }

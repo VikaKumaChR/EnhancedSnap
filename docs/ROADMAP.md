@@ -31,7 +31,7 @@ product icon, and the Microsoft Store package next to the MSI and ZIP.
 | Per-virtual-desktop layouts (`IVirtualDesktopManager`) | `src/EnhancedSnap.Core/Layouts/LayoutCatalog.cs` |
 | Free-form "canvas" layouts (overlapping zones) | `src/EnhancedSnap.Core/Settings/AppSettings.cs` (`CustomLayout`) |
 | Direct-manipulation layout editor (drag dividers on screen) | `src/EnhancedSnap.Settings/Controls/LayoutEditorDialog.cs` |
-| Non-primary/middle mouse button activation, mouse-wheel layout switching while dragging | `SnapEngine.UpdateDrag` |
+| Non-primary/middle mouse button activation, mouse-wheel layout switching while dragging with the zones shown (the snap bar's sets already switch with the wheel) | `SnapEngine.UpdateDrag` |
 | Zone numbers / dragged app icon inside the drop target (Direct2D/DirectWrite drawing surfaces) | `src/EnhancedSnap/Overlay/ZoneOverlay.cs` |
 | Fluent tray flyout instead of the Win32 context menu | `src/EnhancedSnap/Tray/TrayIcon.cs` |
 | "Pick from running apps" for exclusions | `src/EnhancedSnap.Settings/Pages/AppsPage.xaml.cs` |

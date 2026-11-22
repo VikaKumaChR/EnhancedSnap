@@ -116,6 +116,9 @@ public static unsafe partial class Win32
     [LibraryImport("kernel32.dll")]
     public static partial int GetCurrentPackageFamilyName(ref uint packageFamilyNameLength, char* packageFamilyName);
 
+    [LibraryImport("shell32.dll", StringMarshalling = StringMarshalling.Utf16)]
+    public static partial int SetCurrentProcessExplicitAppUserModelID(string appId);
+
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool EnumDisplayMonitors(nint hdc, RECT* lprcClip, delegate* unmanaged<nint, nint, RECT*, nint, int> lpfnEnum, nint dwData);

@@ -113,8 +113,14 @@ internal static class FluentMotion
     public static readonly TimeSpan Exit = TimeSpan.FromMilliseconds(100);
     public static readonly TimeSpan Glide = TimeSpan.FromMilliseconds(150);
 
+    /// <summary>"Direct Entrance" at its middle duration (Learn, Motion in Windows: 167, 250, 333 ms): the pop down expanding.</summary>
+    public static readonly TimeSpan Expand = TimeSpan.FromMilliseconds(250);
+
     /// <summary>Decelerate ("fast out, slow in"): cubic-bezier(0, 0, 0, 1).</summary>
     public static readonly (Vector2 C1, Vector2 C2) Decelerate = (new Vector2(0f, 0f), new Vector2(0f, 1f));
+
+    /// <summary>"Existing Elements" moving to a new place (Learn, Motion in Windows): cubic-bezier(0.55, 0.55, 0, 1).</summary>
+    public static readonly (Vector2 C1, Vector2 C2) Reposition = (new Vector2(0.55f, 0.55f), new Vector2(0f, 1f));
 
     /// <summary>Accelerate for exits: cubic-bezier(0.7, 0, 1, 0.5).</summary>
     public static readonly (Vector2 C1, Vector2 C2) Accelerate = (new Vector2(0.7f, 0f), new Vector2(1f, 0.5f));

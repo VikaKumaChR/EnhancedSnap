@@ -16,6 +16,7 @@ internal interface IDividerOwner
 {
     void BeginDividerDrag(SnapGroup group, DividerHandle handle, PointI point);
 
+    /// <summary>Move the dragged divider so that its gap's centre is at <paramref name="point"/> (screen pixels, on the axis it moves along).</summary>
     void DragDivider(SnapGroup group, PointI point);
 
     void EndDividerDrag(SnapGroup group);
@@ -28,8 +29,13 @@ internal interface IDividerOwner
 /// the pointer is over a gap; then a Fluent acrylic bar with a grip appears and the cursor becomes a resize arrow.
 /// Dragging shows the other windows as wallpaper placeholders, resizes the window in front live, and places
 /// everything on release.
-/// Two windows: an input window whose region is exactly the gaps (so it can never take a click meant for an app),
-/// and a click-through overlay just below it for the bar and the placeholders.
+/// Two windows: an input window whose region is the gaps and the caps at their ends, nothing else (so it can never
+/// take a click meant for an app — see <see cref="DividerHitGeometry"/>), and a click-through overlay just below it
+/// for the bar and the placeholders. The bar is only drawn: it reaches a little over the windows' edges, and those
+/// stay the windows'. The cursor is chosen from where the pointer is, with the same hit test as a press, so the arrow
+/// it shows is always what a drag there does. A drag keeps the offset it was grabbed at from the gap's centre, so
+/// grabbing a cap or the side of a gap does not make the divider jump, and moves nothing until the pointer passes
+/// the system's drag distance, so a click never moves a divider.
 /// </summary>
 internal sealed unsafe class DividerLayer : IDisposable
 {
@@ -58,6 +64,10 @@ internal sealed unsafe class DividerLayer : IDisposable
     private int _dragging = -1;
     private bool _pointerless;
     private bool _tracking;
+    private PointI _press;
+    private PointI _grab;
+    private PointI _dragDistance;
+    private bool _moving;
 
     public DividerLayer(CompositionHost host, GroupMaterials materials, IDividerOwner owner, SnapGroup group)
     {
@@ -67,7 +77,8 @@ internal sealed unsafe class DividerLayer : IDisposable
         Group = group;
         _c = host.Compositor;
         nint module = GetModuleHandle(null);
-        // No redirection bitmap and no content: nothing is ever drawn, but the region (the gaps) is hit-tested.
+        // No redirection bitmap and no content: nothing is ever drawn, but the region (the gaps and the caps at their
+        // ends) is hit-tested.
         InputHwnd = CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_NOREDIRECTIONBITMAP, InputClass, "Enhanced Snap dividers", WS_POPUP, 0, 0, 1, 1, 0, 0, module, 0);
         OverlayHwnd = CreateWindowEx(
             WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_NOREDIRECTIONBITMAP | WS_EX_LAYERED | WS_EX_TRANSPARENT,
@@ -103,6 +114,7 @@ internal sealed unsafe class DividerLayer : IDisposable
         _root.Children.InsertAtTop(_dragRoot);
         _root.Children.InsertAtTop(_barsRoot);
         _target.Root = _root;
+        ApplyRegion(); // empty until the first update: the input window never exists without a region
     }
 
     public nint InputHwnd { get; }
@@ -115,7 +127,7 @@ internal sealed unsafe class DividerLayer : IDisposable
 
     public bool IsDragging => _dragging >= 0;
 
-    /// <summary>New dividers, rectangle or theme. Bars are rebuilt (hidden); the input region becomes the gaps.</summary>
+    /// <summary>New dividers, rectangle or theme. Bars are rebuilt (hidden); the input region becomes the gaps and caps.</summary>
     public void Update(RectI bounds, IReadOnlyList<DividerHandle> handles, FluentTheme theme, float scale)
     {
         if (_dragging >= 0)
@@ -132,7 +144,7 @@ internal sealed unsafe class DividerLayer : IDisposable
         bool same = bounds == _bounds && ReferenceEquals(theme, _theme) && handles.Count == _bars.Count;
         for (int i = 0; same && i < handles.Count; i++)
         {
-            same = handles[i] == _bars[i].Handle;
+            same = handles[i].SameAs(_bars[i].Handle);
         }
 
         if (same)
@@ -145,17 +157,6 @@ internal sealed unsafe class DividerLayer : IDisposable
         _scale = scale;
         _root.Size = new Vector2(bounds.Width, bounds.Height);
 
-        nint region = CreateRectRgn(0, 0, 0, 0);
-        foreach (var handle in handles)
-        {
-            var r = handle.HitRect.Offset(-bounds.Left, -bounds.Top);
-            nint part = CreateRectRgn(r.Left, r.Top, r.Right, r.Bottom);
-            CombineRgn(region, region, part, RGN_OR);
-            DeleteObject(part);
-        }
-
-        SetWindowRgn(InputHwnd, region, true); // the window owns the region from here on
-
         _barsRoot.Children.RemoveAll();
         _bars.Clear();
         foreach (var handle in handles)
@@ -166,9 +167,64 @@ internal sealed unsafe class DividerLayer : IDisposable
         }
 
         _hovered = -1;
+        ApplyRegion();
     }
 
-    /// <summary>Directly above the group's top window: [input][overlay][top member]…</summary>
+    /// <summary>
+    /// The input region: every gap (less any window that reaches into it) and cap, nothing else. The hovered bar is not
+    /// part of it: it is drawn a little over the windows' edges, and a press there must reach the window. If GDI can't
+    /// make the region, the previous one stays rather than none, which would make the whole layer take clicks.
+    /// </summary>
+    private void ApplyRegion()
+    {
+        nint region = CreateRectRgn(0, 0, 0, 0);
+        if (region == 0)
+        {
+            Log.Warn("Divider input region could not be created");
+            return;
+        }
+
+        foreach (var (handle, _) in _bars)
+        {
+            foreach (var part in handle.Strip)
+            {
+                AddToRegion(region, part);
+            }
+
+            foreach (var cap in handle.Caps ?? [])
+            {
+                AddToRegion(region, cap);
+            }
+        }
+
+        // Once set, the window owns the region (it draws nothing, so no redraw); one it refused is still ours.
+        if (SetWindowRgn(InputHwnd, region, false) == 0)
+        {
+            DeleteObject(region);
+        }
+    }
+
+    private void AddToRegion(nint region, RectI screen)
+    {
+        if (screen.IsEmpty)
+        {
+            return;
+        }
+
+        var r = screen.Offset(-_bounds.Left, -_bounds.Top);
+        nint part = CreateRectRgn(r.Left, r.Top, r.Right, r.Bottom);
+        if (part != 0)
+        {
+            CombineRgn(region, region, part, RGN_OR);
+            DeleteObject(part);
+        }
+    }
+
+    /// <summary>
+    /// Directly above the group's top window: [input][overlay][top member]… Once a topmost member has been on top, the
+    /// layer is topmost too, and inserting it after a normal window does not clear that: it would float over every
+    /// other window. So it drops topmost first when the top member is a normal window.
+    /// </summary>
     public void PlaceAbove(nint topMember)
     {
         nint above = GetWindow(topMember, GW_HWNDPREV);
@@ -177,7 +233,19 @@ internal sealed unsafe class DividerLayer : IDisposable
             above = GetWindow(above, GW_HWNDPREV);
         }
 
-        nint insertAfter = above != 0 ? above : (GetExStyle(topMember) & WS_EX_TOPMOST) != 0 ? HWND_TOPMOST : 0;
+        bool topmost = (GetExStyle(topMember) & WS_EX_TOPMOST) != 0;
+        if (!topmost)
+        {
+            foreach (nint hwnd in (ReadOnlySpan<nint>)[InputHwnd, OverlayHwnd])
+            {
+                if ((GetExStyle(hwnd) & WS_EX_TOPMOST) != 0)
+                {
+                    SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+                }
+            }
+        }
+
+        nint insertAfter = above != 0 ? above : topmost ? HWND_TOPMOST : 0;
         const uint flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW;
         SetWindowPos(InputHwnd, insertAfter, 0, 0, 0, 0, flags);
         SetWindowPos(OverlayHwnd, InputHwnd, 0, 0, 0, 0, flags);
@@ -393,11 +461,23 @@ internal sealed unsafe class DividerLayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// The divider a press at <paramref name="screen"/> would grab (the cursor uses the same answer), or -1: exactly the
+    /// input region, gaps first, then caps.
+    /// </summary>
     private int HitTest(PointI screen)
     {
         for (int i = 0; i < _bars.Count; i++)
         {
-            if (_bars[i].Handle.HitRect.Contains(screen))
+            if (_bars[i].Handle.StripContains(screen))
+            {
+                return i;
+            }
+        }
+
+        for (int i = 0; i < _bars.Count; i++)
+        {
+            if (_bars[i].Handle.CapsContain(screen))
             {
                 return i;
             }
@@ -405,6 +485,48 @@ internal sealed unsafe class DividerLayer : IDisposable
 
         return -1;
     }
+
+    /// <summary>
+    /// A press on a divider: remember where it was grabbed, as an offset from the gap's centre along the axis the
+    /// divider moves on (a cap or the side of a gap is not the centre), and how far a click may wobble before it is a
+    /// drag (the system's drag distance at this monitor's DPI).
+    /// </summary>
+    private void Press(PointI screen, DividerHandle handle)
+    {
+        _press = screen;
+        _grab = handle.Divider.Orientation == DividerOrientation.Vertical
+            ? new PointI(screen.X - (int)Math.Round(handle.HitRect.CenterX), 0)
+            : new PointI(0, screen.Y - (int)Math.Round(handle.HitRect.CenterY));
+        uint dpi = GetDpiForWindow(InputHwnd);
+        dpi = dpi == 0 ? 96 : dpi;
+        _dragDistance = new PointI(GetSystemMetricsForDpi(SM_CXDRAG, dpi), GetSystemMetricsForDpi(SM_CYDRAG, dpi));
+        _moving = false;
+        _pointerless = false;
+    }
+
+    /// <summary>
+    /// Where the dragged divider's gap centre goes for the pointer at <paramref name="screen"/>: the pointer less the
+    /// offset the divider was grabbed at, so it does not jump. Null while the pointer is still within the drag distance
+    /// of the press (a click never moves a divider), and for drags the pointer did not start (test probes).
+    /// </summary>
+    private PointI? DragTarget(PointI screen)
+    {
+        if (_pointerless)
+        {
+            return null;
+        }
+
+        if (!_moving && Math.Abs(screen.X - _press.X) <= _dragDistance.X && Math.Abs(screen.Y - _press.Y) <= _dragDistance.Y)
+        {
+            return null;
+        }
+
+        _moving = true;
+        return new PointI(screen.X - _grab.X, screen.Y - _grab.Y);
+    }
+
+    private static PointI CursorScreen() =>
+        EnhancedSnap.Core.Interop.Win32.GetCursorPos(out var p) ? new PointI(p.X, p.Y) : new PointI(int.MinValue, int.MinValue);
 
     private PointI ToScreen(nint lParam) => new(_bounds.Left + (short)(lParam & 0xFFFF), _bounds.Top + (short)((lParam >> 16) & 0xFFFF));
 
@@ -461,13 +583,15 @@ internal sealed unsafe class DividerLayer : IDisposable
                 case WM_MOUSEACTIVATE:
                     return MA_NOACTIVATE;
                 case WM_NCHITTEST:
-                    return HTCLIENT; // the window region already limits this to the gaps
+                    return HTCLIENT; // the window region already limits this to the gaps and caps
                 case WM_ERASEBKGND:
                     return 1;
                 case WM_DPICHANGED:
                     return 0;
                 case WM_SETCURSOR:
-                    int index = layer._dragging >= 0 ? layer._dragging : layer._hovered;
+                    // From where the pointer is now (WM_SETCURSOR comes before the move that updates the hover), with the
+                    // same hit test as a press: the arrow shown is always the drag a press would start.
+                    int index = layer._dragging >= 0 ? layer._dragging : layer.HitTest(CursorScreen());
                     SetCursor(index < 0 || index >= layer._bars.Count ? CursorArrow
                         : layer._bars[index].Handle.Divider.Orientation == DividerOrientation.Vertical ? CursorWE : CursorNS);
                     return 1;
@@ -482,7 +606,10 @@ internal sealed unsafe class DividerLayer : IDisposable
                     var point = layer.ToScreen(lParam);
                     if (layer._dragging >= 0)
                     {
-                        layer._owner.DragDivider(layer.Group, point);
+                        if (layer.DragTarget(point) is { } target)
+                        {
+                            layer._owner.DragDivider(layer.Group, target);
+                        }
                     }
                     else
                     {
@@ -501,6 +628,7 @@ internal sealed unsafe class DividerLayer : IDisposable
                     {
                         layer.SetHover(hit);
                         layer._dragging = hit;
+                        layer.Press(down, layer._bars[hit].Handle);
                         SetCapture(hwnd);
                         layer._owner.BeginDividerDrag(layer.Group, layer._bars[hit].Handle, down);
                     }

@@ -15,6 +15,9 @@ public static class LayoutCatalog
     public const string Quarters = "quarters";
     public const string Grid3x2 = "grid-3x2";
     public const string Rows = "rows";
+    public const string TopTwoThirds = "top-two-thirds";
+    public const string TopMain = "top-main";
+    public const string ThreeRows = "three-rows";
     public const string Full = "full";
 
     private const double Third = 1.0 / 3.0;
@@ -60,6 +63,14 @@ public static class LayoutCatalog
             new ZoneFrac(0, 0, 1, 0.5),
             new ZoneFrac(0, 0.5, 1, 0.5),
         ]),
+        new(TopTwoThirds, Stacked(2, 1)),
+        new(TopMain, // "main and stack" turned on its side: a main window above, two side by side below
+        [
+            new ZoneFrac(0, 0, 1, 0.6),
+            new ZoneFrac(0, 0.6, 0.5, 0.4),
+            new ZoneFrac(0.5, 0.6, 0.5, 0.4),
+        ]),
+        new(ThreeRows, Stacked(1, 1, 1)),
         new(Full, [new ZoneFrac(0, 0, 1, 1)]),
     ];
 
@@ -153,4 +164,8 @@ public static class LayoutCatalog
 
         return zones;
     }
+
+    /// <summary>Full-width rows, top to bottom, sized by weight.</summary>
+    private static ZoneFrac[] Stacked(params double[] weights) =>
+        [.. Columns(weights).Select(static z => new ZoneFrac(0, z.X, 1, z.W))];
 }

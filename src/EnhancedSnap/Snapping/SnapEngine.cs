@@ -28,6 +28,10 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
     public const nuint SurfacesTimerId = 14;
     private const uint DragTimerMs = 33;
     private const uint SurfacesIdleMs = 60_000; // GPU devices of the text popups are kept this long after the last one closes
+    private const long SnapBarRestMs = 300;     // under a display above, the pointer rests this long at the top first
+    private const float PeekShowEpx = 200;      // the pop down peeks once the dragged pointer is this close to the top
+    private const float PeekHideEpx = 224;      // …and goes again beyond this, a little further, so the line doesn't flicker it
+    private const float SnapBarNearEpx = 56;    // the expanded pop down keeps the pointer this far around it
 
     private static SnapEngine? _instance;
     private static readonly nint[] ResizeCursors =
@@ -51,9 +55,15 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
     private DragSession? _drag;
     private ResizeSession? _resize;
     private nint _resizing;
-    private LayoutFlyout? _flyout;
+    private LayoutFlyout? _flyout;      // snap layouts on the maximize button (hover) and Win + Z
+    private LayoutFlyout? _snapBar;     // the pop down at the top while a window is dragged
     private bool _flyoutSticky;
     private int _flyoutAwayTicks;
+    private SnapBarSet _snapBarSet;     // the set both menus open with: the one picked last in either, until the engine restarts
+    private volatile bool _snapBarOpen; // the pop down is all the way down while a window is dragged: the wheel switches its sets
+    private volatile bool _windowsSnapOn;
+    private volatile bool _testWindowsSnapOn; // test mode: as if the user had switched Windows Snap back on
+    private DragSession? _testDrag;     // test mode: a drag driven by debug commands, without real input
     private SnapAssist? _assist;
     private (SnapGroup Group, int Zone)? _assistTarget;
     private volatile bool _popupOpen;
@@ -68,24 +78,53 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
         _groups = new GroupManager(composition, _monitors, _tracker, system, () => _settings);
         _surfaces = new DrawingSurfaces(composition.Compositor);
         _notifyElevated = notifyElevated;
+        _snapBarSet = settings.SnapBarLayouts.StartSet;
+        _windowsSnapOn = WindowsSnapOverride.IsWindowsSnapOn();
     }
 
     // ------------------------------------------------------------------ IInputPolicy (called on the hook thread)
 
-    public bool HandleWinZ { get { var s = _settings; return s.Enabled && s.ReplaceWindowsSnap && s.LayoutsOnMaximizeHover; } }
+    public bool HandleWinZ { get { var s = _settings; return s.Enabled && s.ReplaceWindowsSnap && s.LayoutsOnMaximizeHover && TakeoverActive; } }
 
     public bool ShouldHandleWinZ(nint hwnd) => HandleWinZ && WindowRules.IsSnappable(hwnd, Volatile.Read(ref _settings).ExcludedApps);
 
-    public bool WatchMaximizeHover { get { var s = _settings; return s.Enabled && s.ReplaceWindowsSnap && s.LayoutsOnMaximizeHover; } }
+    public bool WatchMaximizeHover { get { var s = _settings; return s.Enabled && s.ReplaceWindowsSnap && s.LayoutsOnMaximizeHover && TakeoverActive; } }
 
     public bool PopupOpen => _popupOpen;
+
+    public bool SnapBarOpen => _snapBarOpen;
 
     public nint SwitcherProxy(nint hwnd) => _groups.SwitcherProxy(hwnd);
 
     /// <summary>Which hooks the input thread needs for the current settings.</summary>
     public (bool Keyboard, bool Mouse) InputNeeds(AppSettings s) => (
         s.Enabled && (s.OverrideWinArrows || s.ReplaceWindowsSnap || s.GroupsInTaskbar),
-        s.Enabled && s.ReplaceWindowsSnap && (s.LayoutsOnMaximizeHover || s.SnapAssist));
+        s.Enabled && s.ReplaceWindowsSnap && TakeoverActive && (s.LayoutsOnMaximizeHover || s.SnapAssist || s.SnapBar));
+
+    /// <summary>
+    /// Whether Windows Snap is out of the way, so Enhanced Snap's snap bar, edges, flyout and Snap Assist may show: it is
+    /// off (Enhanced Snap turned it off, or the user had), or this is test mode, which never touches it. When the user
+    /// switches Windows Snap back on they stand down, so the two never show at once. Test mode can pretend it was
+    /// switched back on (debug command 13, argument 6) to check that.
+    /// </summary>
+    private bool TakeoverActive => WindowRules.TestWindowTitle is not null ? !_testWindowsSnapOn : !_windowsSnapOn;
+
+    /// <summary>Windows Snap was switched on or off (from the engine host, after it applied the setting).</summary>
+    public void OnWindowsSnapChanged(bool on)
+    {
+        if (_windowsSnapOn == on)
+        {
+            return;
+        }
+
+        _windowsSnapOn = on;
+        Log.Info($"Windows Snap is {(on ? "on" : "off")}: Enhanced Snap's snap bar, edges and flyout are {(TakeoverActive ? "active" : "standing down")}");
+        if (!TakeoverActive)
+        {
+            HidePopups();
+            _overlays.HideAll(animate: false);
+        }
+    }
 
     /// <summary>Alt + Tab (or Win + Tab) pressed in a group window; the input thread held the Tab back.</summary>
     public void OnSwitcher(bool altTab, nint proxy) => _groups.BeginSwitch(proxy, altTab);
@@ -109,6 +148,11 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
     {
         var previous = _settings;
         Volatile.Write(ref _settings, settings);
+        if (previous.SnapBarLayouts.StartSet != settings.SnapBarLayouts.StartSet)
+        {
+            _snapBarSet = settings.SnapBarLayouts.StartSet;
+        }
+
         UpdateHooks();
         _monitors.Rebuild(settings);
         _overlays.Sync(_monitors.Monitors, Palette());
@@ -218,7 +262,7 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
                 break;
             case SurfacesTimerId:
                 KillTimer(_host, SurfacesTimerId);
-                if (_assist?.IsVisible != true && _flyout?.IsVisible != true)
+                if (_assist?.IsVisible != true && _flyout?.IsVisible != true && _snapBar?.IsVisible != true)
                 {
                     _surfaces.Release();
                 }
@@ -238,7 +282,7 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
 
     private OverlayPalette Palette() => OverlayPalette.Create(_system, _settings);
 
-    private bool Replacing => _settings.Enabled && _settings.ReplaceWindowsSnap;
+    private bool Replacing => _settings.Enabled && _settings.ReplaceWindowsSnap && TakeoverActive;
 
     private void UpdateHooks()
     {
@@ -373,11 +417,14 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
             return;
         }
 
-        var settings = _settings;
         Win32.GetCursorPos(out var p);
-        var cursor = new PointI(p.X, p.Y);
-        bool shift = IsKeyDown(VK_SHIFT);
-        bool ctrl = IsKeyDown(VK_CONTROL);
+        DragStep(drag, new PointI(p.X, p.Y), IsKeyDown(VK_SHIFT), IsKeyDown(VK_CONTROL));
+    }
+
+    /// <summary>One step of a drag with the pointer at <paramref name="cursor"/> (also test mode's simulated drag steps).</summary>
+    private void DragStep(DragSession drag, PointI cursor, bool shift, bool ctrl)
+    {
+        var settings = _settings;
         bool zonesActive = settings.Activation == ActivationMode.HoldShift ? shift : !shift;
         var monitor = _monitors.FromPoint(cursor);
         if (monitor is null || monitor.Zones.Length == 0)
@@ -389,11 +436,7 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
         if (zonesActive)
         {
             drag.Edge = null;
-            if (_flyout is { IsVisible: true, DragMode: true })
-            {
-                HideFlyout();
-            }
-
+            HideSnapBar(animate: true);
             UpdateZones(drag, monitor, cursor, ctrl, settings);
             return;
         }
@@ -408,32 +451,26 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
 
         if (!Replacing)
         {
+            HideSnapBar(animate: false);
             return; // Windows Snap still owns edges and the snap bar
         }
 
-        // Snap bar: dragging to the top centre opens the layouts flyout; the dragged pointer drives it.
-        float scale = (float)monitor.Display.Scale;
-        var bounds = monitor.Display.Bounds;
-        if (_flyout is { IsVisible: true, DragMode: true } flyout)
+        // The move loop starts as soon as a title bar is pressed: a plain click there is no drag, and doesn't bring up
+        // the pop down. Like Windows', it waits until the pointer has moved past the drag threshold.
+        if (!drag.Moved)
         {
-            flyout.UpdatePointer(cursor); // ZoneHovered previews the hovered zone on screen
-            bool near = cursor.Y <= flyout.Bounds.Bottom + (int)(56 * scale)
-                && cursor.X >= flyout.Bounds.Left - (int)(56 * scale) && cursor.X <= flyout.Bounds.Right + (int)(56 * scale);
-            drag.Edge = null;
-            if (near)
+            uint dpi = (uint)monitor.Display.Dpi;
+            drag.Moved = Math.Abs(cursor.X - drag.StartCursor.X) > GetSystemMetricsForDpi(SM_CXDRAG, dpi)
+                || Math.Abs(cursor.Y - drag.StartCursor.Y) > GetSystemMetricsForDpi(SM_CYDRAG, dpi);
+            if (settings.SnapBar)
             {
-                return;
+                UpdateArmed(drag, monitor, cursor, null); // where the press is decides, not where the threshold is passed
             }
-
-            HideFlyout();
         }
 
-        if (settings.SnapBar && cursor.Y <= bounds.Top + (int)(4 * scale)
-            && Math.Abs(cursor.X - bounds.CenterX) <= bounds.Width * 0.18)
+        if (drag.Moved && StepSnapBar(drag, monitor, cursor, settings))
         {
-            _overlays.HideAll(animate: false);
-            ShowFlyout(drag.Hwnd, monitor, cursor, dragMode: true, sticky: false);
-            return;
+            return; // the expanded pop down has the pointer
         }
 
         // Screen edges first (sides → halves, corners → quarters, top → fill), then the empty space of a group
@@ -531,6 +568,168 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
     private bool HasMonitorAt(PointI point) =>
         Win32.MonitorFromPoint(new POINT(point.X, point.Y), Win32.MONITOR_DEFAULTTONULL) != 0;
 
+    /// <summary>
+    /// The pop down while a window is dragged, like Windows' snap bar: it peeks — only its bottom edge shows at the top
+    /// of the screen — once the pointer comes within <see cref="PeekShowEpx"/> of the top, slides all the way down when
+    /// the pointer reaches the top (<see cref="SnapBarTriggered"/>), back up to peeking when the pointer leaves it, and
+    /// away beyond <see cref="PeekHideEpx"/>. Returns true while the expanded pop down has the pointer (no edge target
+    /// then: the pointer at the top would otherwise preview a fill under it).
+    /// </summary>
+    private bool StepSnapBar(DragSession drag, MonitorZones monitor, PointI cursor, AppSettings settings)
+    {
+        var bar = _snapBar is { IsShown: true } shown ? shown : null;
+        if (bar is not null && (!settings.SnapBar || bar.Monitor?.Id != monitor.Id))
+        {
+            HideSnapBar(animate: true); // turned off, or the pointer went to another display
+            bar = null;
+        }
+
+        if (!settings.SnapBar)
+        {
+            return false;
+        }
+
+        if (bar is { IsExpanded: true })
+        {
+            bar.UpdatePointer(cursor); // ZoneHovered previews the hovered zone on screen
+            var panel = bar.PanelBounds;
+            int near = (int)(SnapBarNearEpx * monitor.Display.Scale);
+            bool nearPanel = cursor.Y <= panel.Bottom + near && cursor.X >= panel.Left - near && cursor.X <= panel.Right + near;
+            if (nearPanel || InSnapBarBand(monitor, cursor, out _)) // the band too: on an ultrawide it reaches past the panel
+            {
+                drag.Edge = null;
+                return true;
+            }
+
+            bar.Collapse();
+            _snapBarOpen = false;
+        }
+
+        if (SnapBarTriggered(drag, monitor, cursor, bar))
+        {
+            _overlays.HideAll(animate: false);
+            drag.Edge = null;
+            if (bar is null)
+            {
+                ShowSnapBar(drag.Hwnd, monitor, expand: true);
+            }
+            else
+            {
+                bar.Expand();
+                Log.Debug($"Snap bar expanded: {bar.Describe()}");
+            }
+
+            _snapBarOpen = _snapBar?.SetCount > 1; // the wheel is held back only when it has another set to show
+            _snapBar?.UpdatePointer(cursor);
+            return true;
+        }
+
+        bool peek = PeekWanted(drag, monitor, cursor, shown: bar is not null);
+        if (peek && bar is null)
+        {
+            ShowSnapBar(drag.Hwnd, monitor, expand: false);
+        }
+        else if (!peek && bar is not null)
+        {
+            HideSnapBar(animate: true);
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Whether the pop down peeks: the pointer within <see cref="PeekShowEpx"/> of the top of the work area (Windows'
+    /// peeks as soon as a dragged window nears the top), until it is beyond <see cref="PeekHideEpx"/>. Below another
+    /// display a pointer on its way up only passes through: it has to stay within reach for <see cref="SnapBarRestMs"/>.
+    /// </summary>
+    private bool PeekWanted(DragSession drag, MonitorZones monitor, PointI cursor, bool shown)
+    {
+        int reach = (int)((shown ? PeekHideEpx : PeekShowEpx) * monitor.Display.Scale);
+        if (cursor.Y > monitor.Display.WorkArea.Top + reach)
+        {
+            drag.PeekSince = 0;
+            return false;
+        }
+
+        if (shown || !HasMonitorAt(new PointI(cursor.X, monitor.Display.Bounds.Top - 2)))
+        {
+            return true;
+        }
+
+        long now = Environment.TickCount64;
+        if (drag.PeekSince == 0)
+        {
+            drag.PeekSince = now;
+        }
+
+        return now - drag.PeekSince >= SnapBarRestMs;
+    }
+
+    /// <summary>
+    /// The pointer reached the top centre of a display (the middle 36 %), or the edge of the peeking pop down: it slides
+    /// all the way down. Against the screen's own top edge at once — the edge stops the pointer, so a 4 epx band is easy
+    /// to hit. Where another display sits above, nothing stops it there and a pointer on its way up just passes through:
+    /// the band is 12 epx and the pointer has to rest in it for <see cref="SnapBarRestMs"/> first (the drag timer keeps
+    /// checking while it rests). A drag that starts in the band (a maximized window taken by its title bar) has to leave
+    /// it first, or the pop down would open under the pointer before the window has moved.
+    /// </summary>
+    private bool SnapBarTriggered(DragSession drag, MonitorZones monitor, PointI cursor, LayoutFlyout? bar)
+    {
+        bool centre = InSnapBarBand(monitor, cursor, out bool displayAbove);
+        bool strip = cursor.Y <= monitor.Display.WorkArea.Top + (int)(LayoutFlyout.PeekVisibleEpx * monitor.Display.Scale);
+        bool edge = strip && bar is { IsPeeking: true } && cursor.X >= bar.PanelBounds.Left && cursor.X < bar.PanelBounds.Right;
+        UpdateArmed(drag, monitor, cursor, bar);
+        if (!centre && !edge)
+        {
+            drag.SnapBarSince = 0;
+            return false;
+        }
+
+        if (!drag.SnapBarArmed)
+        {
+            return false;
+        }
+
+        if (!displayAbove)
+        {
+            return true;
+        }
+
+        long now = Environment.TickCount64;
+        if (drag.SnapBarSince == 0)
+        {
+            drag.SnapBarSince = now;
+        }
+
+        return now - drag.SnapBarSince >= SnapBarRestMs;
+    }
+
+    /// <summary>
+    /// Arms the drag once the pointer is clear of what opens the pop down: the top centre band, and the strip its peeking
+    /// edge takes — under the panel once it shows, anywhere before it does, as it is about to show there. Checked from the
+    /// press on, before the pointer moves past the drag threshold, so where the drag starts decides.
+    /// </summary>
+    private void UpdateArmed(DragSession drag, MonitorZones monitor, PointI cursor, LayoutFlyout? bar)
+    {
+        if (drag.SnapBarArmed || InSnapBarBand(monitor, cursor, out _))
+        {
+            return;
+        }
+
+        bool strip = cursor.Y <= monitor.Display.WorkArea.Top + (int)(LayoutFlyout.PeekVisibleEpx * monitor.Display.Scale);
+        bool underPeek = strip && (bar is null || (cursor.X >= bar.PanelBounds.Left && cursor.X < bar.PanelBounds.Right));
+        drag.SnapBarArmed = !underPeek;
+    }
+
+    /// <summary>The top centre of a display, its middle 36 %: 4 epx against the screen's own top edge, 12 below another display.</summary>
+    private bool InSnapBarBand(MonitorZones monitor, PointI cursor, out bool displayAbove)
+    {
+        var bounds = monitor.Display.Bounds;
+        displayAbove = HasMonitorAt(new PointI(cursor.X, bounds.Top - 2));
+        return cursor.Y <= bounds.Top + (int)((displayAbove ? 12 : 4) * monitor.Display.Scale)
+            && Math.Abs(cursor.X - bounds.CenterX) <= bounds.Width * 0.18;
+    }
+
     /// <summary>Where a zone of a layout lands on a monitor: an existing group's (resized) zone, else the template.</summary>
     private RectI TargetRect(MonitorZones monitor, LayoutDefinition layout, int[] zones)
     {
@@ -571,10 +770,10 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
         }
 
         UpdateDrag(); // final modifier/cursor state
-        var flyoutTarget = _flyout is { IsVisible: true, DragMode: true } f ? f.Hovered : null;
-        var flyoutMonitor = _flyout?.IsVisible == true ? _monitors.FromPoint(_flyout.Bounds.Center) : null;
+        var flyoutTarget = _snapBar is { IsShown: true, IsExpanded: true } bar ? bar.Hovered : null;
+        var flyoutMonitor = flyoutTarget is not null ? _snapBar?.Monitor : null;
         EndDragSession();
-        HideFlyout();
+        HideSnapBar(animate: true);
         _overlays.HideAll(animate: true);
 
         Win32.GetCursorPos(out var p);
@@ -704,7 +903,7 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
         }
 
         EndDragSession();
-        HideFlyout();
+        HideSnapBar(animate: false);
         _overlays.HideAll(animate: false);
     }
 
@@ -745,7 +944,7 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
         }
 
         Win32.GetCursorPos(out var p);
-        ShowFlyout(hwnd, monitor, new PointI(p.X, p.Y), dragMode: false, sticky: false);
+        ShowFlyout(hwnd, monitor, new PointI(p.X, p.Y), sticky: false);
     }
 
     /// <summary>Win + Z: snap layouts for the active window, anchored at its maximize button.</summary>
@@ -765,28 +964,79 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
 
         float scale = (float)monitor.Display.Scale;
         var anchor = new PointI(frame.Value.Right - (int)(69 * scale), frame.Value.Top + (int)(16 * scale));
-        ShowFlyout(hwnd, monitor, anchor, dragMode: false, sticky: true);
+        ShowFlyout(hwnd, monitor, anchor, sticky: true);
     }
 
-    private void ShowFlyout(nint hwnd, MonitorZones monitor, PointI anchor, bool dragMode, bool sticky)
+    /// <summary>
+    /// Snap layouts on the maximize button or Win + Z: snap suggestions, then the same sets as the pop down
+    /// (<see cref="SnapBarSetsFor"/>), opening on the one picked last in either.
+    /// </summary>
+    private void ShowFlyout(nint hwnd, MonitorZones monitor, PointI anchor, bool sticky)
     {
         if (_flyout is null)
         {
-            _flyout = new LayoutFlyout(_composition, _surfaces);
-            _flyout.ZoneHovered += OnFlyoutZoneHovered;
-            _flyout.ZoneChosen += OnFlyoutZoneChosen;
-            _flyout.SuggestionChosen += OnFlyoutSuggestionChosen;
+            var flyout = new LayoutFlyout(_composition, _surfaces);
+            flyout.ZoneHovered += (m, layout, zone) => OnFlyoutZoneHovered(flyout, m, layout, zone);
+            flyout.ZoneChosen += OnFlyoutZoneChosen;
+            flyout.SuggestionChosen += OnFlyoutSuggestionChosen;
+            flyout.SetChanged += (set, how) => OnSetChanged(flyout, "Flyout", set, how);
+            _flyout = flyout;
         }
 
         HideAssist();
         _flyoutSticky = sticky;
         _flyoutAwayTicks = 0;
-        var recent = dragMode ? [] : WindowIcons.SnappableWindows(_settings.ExcludedApps, h => h != hwnd && !IsIconic(h));
-        _flyout.ShowFor(hwnd, monitor, anchor, _groups.Theme, dragMode, recent);
+        var recent = WindowIcons.SnappableWindows(_settings.ExcludedApps, h => h != hwnd && !IsIconic(h));
+        var sets = SnapBarSetsFor(monitor);
+        _flyout.ShowFor(hwnd, monitor, anchor, _groups.Theme, recent, sets, SnapBarCatalog.IndexOf(sets, _snapBarSet));
+        SetTimer(_host, FlyoutTimerId, 120, 0);
         _popupOpen = sticky; // hover flyouts dismiss by pointer; Win + Z ones by Esc / outside click
-        if (!dragMode)
+        Log.Debug($"Flyout on {monitor.Display.GdiDeviceName}: {_flyout.Describe()}");
+    }
+
+    /// <summary>The pop down while a window is dragged (suggestion00): the same sets as the flyout, on the one picked last.</summary>
+    private void ShowSnapBar(nint hwnd, MonitorZones monitor, bool expand)
+    {
+        if (_snapBar is null)
         {
-            SetTimer(_host, FlyoutTimerId, 120, 0);
+            var bar = new LayoutFlyout(_composition, _surfaces, snapBar: true);
+            bar.ZoneHovered += (m, layout, zone) => OnFlyoutZoneHovered(bar, m, layout, zone);
+            bar.SetChanged += (set, how) => OnSetChanged(bar, "Snap bar", set, how);
+            _snapBar = bar;
+        }
+
+        HideAssist();
+        var sets = SnapBarSetsFor(monitor);
+        _snapBar.ShowBar(hwnd, monitor, _groups.Theme, sets, SnapBarCatalog.IndexOf(sets, _snapBarSet), expand);
+        Log.Debug($"Snap bar {(expand ? "expanded" : "peeking")} on {monitor.Display.GdiDeviceName}: {_snapBar.Describe()}");
+    }
+
+    /// <summary>
+    /// The sets both menus offer on a display — default, top and bottom, the user's own — from one source, so the
+    /// maximize button, Win + Z and the drag to the top always offer the same.
+    /// </summary>
+    private List<SnapBarGroup> SnapBarSetsFor(MonitorZones monitor)
+    {
+        var work = monitor.Display.WorkArea;
+        return SnapBarCatalog.Groups(_settings, work.Width, work.Height, monitor.Display.Scale, monitor.Layout);
+    }
+
+    /// <summary>
+    /// A set picked in either menu is the one both open with next, until the engine restarts. It doesn't change the
+    /// set they start with (Settings, Layouts): that stays the user's choice.
+    /// </summary>
+    private void OnSetChanged(LayoutFlyout source, string name, SnapBarSet set, string how)
+    {
+        _snapBarSet = set;
+        Log.Debug($"{name} set by {how}: {source.Describe()}");
+    }
+
+    /// <summary>The mouse wheel turned while the pop down was down during a drag (from the input thread): next or previous set.</summary>
+    public void OnSnapBarWheel(int step)
+    {
+        if (_snapBar is { IsShown: true, IsExpanded: true } bar)
+        {
+            bar.CycleSet(step);
         }
     }
 
@@ -800,12 +1050,38 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
 
         KillTimer(_host, FlyoutTimerId);
         _popupOpen = _assist?.IsVisible == true;
-        ScheduleSurfaceRelease(); // suggestion icons
+        ScheduleSurfaceRelease(); // suggestion icons, tab names
+    }
+
+    /// <summary>The pop down slides away (or goes at once); a zone it was previewing goes with it.</summary>
+    private void HideSnapBar(bool animate)
+    {
+        _snapBarOpen = false;
+        if (_snapBar is not { IsVisible: true } bar)
+        {
+            return;
+        }
+
+        if (bar.Hovered is not null && bar.Monitor is { } monitor)
+        {
+            _overlays.ShowTarget(monitor, null, 0);
+        }
+
+        if (animate)
+        {
+            bar.HideAnimated();
+        }
+        else
+        {
+            bar.Hide();
+        }
+
+        ScheduleSurfaceRelease(); // tab names
     }
 
     private void CheckFlyoutHover()
     {
-        if (_flyout is not { IsVisible: true } flyout || flyout.DragMode)
+        if (_flyout is not { IsVisible: true } flyout)
         {
             KillTimer(_host, FlyoutTimerId);
             return;
@@ -830,7 +1106,7 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
         }
     }
 
-    private void OnFlyoutZoneHovered(MonitorZones monitor, LayoutDefinition? layout, int zone)
+    private void OnFlyoutZoneHovered(LayoutFlyout source, MonitorZones monitor, LayoutDefinition? layout, int zone)
     {
         if (layout is null || zone < 0)
         {
@@ -838,8 +1114,7 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
             return;
         }
 
-        nint below = _flyout?.Hwnd ?? 0;
-        _overlays.ShowTarget(monitor, TargetRect(monitor, layout, [zone]), below);
+        _overlays.ShowTarget(monitor, TargetRect(monitor, layout, [zone]), source.Hwnd);
         if (_drag is { } drag)
         {
             drag.Edge = null;
@@ -990,6 +1265,7 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
     private void HidePopups()
     {
         HideFlyout();
+        HideSnapBar(animate: false);
         HideAssist();
     }
 
@@ -1356,6 +1632,7 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
                 break;
             case 4: // snap layouts flyout for the window
                 OnWinZ(hwnd);
+                Log.Info($"Test: flyout {(_flyout?.IsVisible == true ? _flyout.Describe() : "not shown")}");
                 break;
             case 5: // Snap Assist for the window's group
                 if (_groups.Of(hwnd) is { } assistGroup)
@@ -1409,7 +1686,10 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
                 }
 
                 break;
-            case 8: // hide popups and previews, end a held divider drag, hide hover bars
+            case 8: // hide popups and previews, end a held divider drag, hide hover bars, end a simulated drag and a simulated
+                    // Windows Snap
+                _testDrag = null;
+                _testWindowsSnapOn = false;
                 HidePopups();
                 _overlays.HideAll(animate: false);
                 _groups.EndHeldDrag();
@@ -1418,6 +1698,83 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
                     _groups.ShowBar(shown, -1);
                 }
 
+                break;
+            case 13: // the snap bar's pop down for the window, as when it is dragged to the top: argument 0–2 = the set to open
+                     // with (classic, horizontal, custom), 3 = the one picked last; 9 = drop the window on the zone the pointer is
+                     // over (command 14), as a release would; 8 = end a simulated drag (command 14 + 1000); 6 = as if Windows
+                     // Snap had been switched back on (the takeover stands down), 7 = back to normal
+                if (argument is 6 or 7)
+                {
+                    _testWindowsSnapOn = argument == 6;
+                    if (!TakeoverActive)
+                    {
+                        HidePopups();
+                        _overlays.HideAll(animate: false);
+                    }
+
+                    Log.Info($"Test: Windows Snap {(argument == 6 ? "on" : "off")} (simulated), takeover {(TakeoverActive ? "active" : "standing down")}, mouse hook needed: {InputNeeds(_settings).Mouse}");
+                }
+                else if (argument == 9)
+                {
+                    if (_snapBar is { IsShown: true, IsExpanded: true, Hovered: { } dropped, Monitor: { } barMonitor })
+                    {
+                        HideSnapBar(animate: true);
+                        SnapInto(hwnd, barMonitor, dropped.Layout, [dropped.Zone], isFill: false, previousZones: null, assist: false);
+                        Log.Info($"Test: dropped on the snap bar into {dropped.Layout.Id} zone {dropped.Zone}: {WindowPlacer.GetFrame(hwnd)}");
+                    }
+                }
+                else if (argument == 8)
+                {
+                    _testDrag = null;
+                    HideSnapBar(animate: true);
+                    _overlays.HideAll(animate: false); // an edge preview the simulated drag left
+                    Log.Info("Test: simulated drag ended, snap bar hiding");
+                }
+                else
+                {
+                    if (argument is >= 0 and <= 2)
+                    {
+                        _snapBarSet = (SnapBarSet)argument;
+                    }
+
+                    ShowSnapBar(hwnd, monitor, expand: true);
+                    _snapBarOpen = _snapBar?.SetCount > 1;
+                    Log.Info($"Test: snap bar {_snapBar?.Describe()} at {_snapBar?.PanelBounds}");
+                }
+
+                break;
+            case 14 when argument >= 1000: // a drag step without real input, through the same code as a real drag: the pointer at
+                                            // the top centre, (argument − 1000) epx down; + 2000 instead: a new drag pressed right
+                                            // there (a title bar clicked, before the pointer moves)
+                var bounds = monitor.Display.Bounds;
+                int down = argument >= 2000 ? argument - 2000 : argument - 1000;
+                var step = new PointI(bounds.Center.X, bounds.Top + (int)(down * monitor.Display.Scale));
+                if (argument >= 2000 || _testDrag is null)
+                {
+                    HideSnapBar(animate: false); // as OnMoveSizeStart: a new drag starts clean
+                    _overlays.HideAll(animate: false);
+                    _testDrag = new DragSession(hwnd, WindowPlacer.GetFrame(hwnd) ?? default, argument >= 2000 ? step : default);
+                }
+
+                DragStep(_testDrag, step, shift: false, ctrl: false);
+                string state = _snapBar is { IsShown: true } stepped
+                    ? $"{(stepped.IsExpanded ? "expanded" : "peeking")}, panel {stepped.PanelBounds} when down, window {stepped.Bounds}" : "hidden";
+                bool held = _snapBar is { IsShown: true, IsExpanded: true } && _testDrag.Edge is null;
+                Log.Info($"Test: drag step {down} epx below the top, snap bar {state}{(held ? ", has the pointer" : string.Empty)}");
+                break;
+            case 14: // the pointer over the pop down (or the flyout), without real input: argument < 100 = a tab; 100 + 10 × card + zone = a zone
+                var menu = _snapBar is { IsShown: true, IsExpanded: true } ? _snapBar : _flyout is { IsVisible: true } ? _flyout : null;
+                if (menu is not null
+                    && (argument < 100 ? menu.TabCenter(argument) : menu.ZoneCenter((argument - 100) / 10, (argument - 100) % 10)) is { } probe)
+                {
+                    menu.UpdatePointer(probe);
+                    Log.Info($"Test: pointer at {probe} on the {(menu == _snapBar ? "snap bar" : "flyout")}, over {(menu.Hovered is { } over ? $"{over.Layout.Id} zone {over.Zone}" : "no zone")}");
+                }
+
+                break;
+            case 15: // the mouse wheel over the pop down: argument 1 = down (the next set), 0 = up (the previous one)
+                OnSnapBarWheel(argument == 1 ? 1 : -1);
+                Log.Info($"Test: wheel {(argument == 1 ? "down" : "up")}, snap bar {_snapBar?.Describe()}");
                 break;
             case 9: // maximize-button hit test at the window's caption (validates hover detection without moving the pointer)
                 if (WindowPlacer.GetFrame(hwnd) is { } caption)
@@ -1443,6 +1800,7 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
         }
 
         _flyout?.Dispose();
+        _snapBar?.Dispose();
         _assist?.Dispose();
         _groups.Dispose();
         _overlays.Dispose();
@@ -1474,5 +1832,17 @@ internal sealed unsafe class SnapEngine : IInputPolicy, IDisposable
         public int SpanAnchor { get; set; } = -1;
 
         public EdgeSnap? Edge { get; set; }
+
+        /// <summary>When the pointer reached the snap bar's band below a display above (0 = not there).</summary>
+        public long SnapBarSince { get; set; }
+
+        /// <summary>When the pointer came within the pop down's peek reach below a display above (0 = not there).</summary>
+        public long PeekSince { get; set; }
+
+        /// <summary>The pointer has been outside the snap bar's band since the drag started, so reaching it opens the pop down.</summary>
+        public bool SnapBarArmed { get; set; }
+
+        /// <summary>The pointer has moved past the drag threshold since the title bar was pressed.</summary>
+        public bool Moved { get; set; }
     }
 }

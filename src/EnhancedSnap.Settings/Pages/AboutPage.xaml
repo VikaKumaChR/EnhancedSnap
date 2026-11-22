@@ -7,10 +7,7 @@
     xmlns:toolkit="using:CommunityToolkit.WinUI.Controls">
 
     <ScrollViewer>
-        <Grid Margin="{StaticResource PageContentMargin}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" MaxWidth="{StaticResource PageMaxWidth}" />
-            </Grid.ColumnDefinitions>
+        <controls:PageContentPanel>
         <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
             <TextBlock Margin="0,24,0,16" Style="{StaticResource TitleTextBlockStyle}" Text="{x:Bind S.Nav_About}" />
 
@@ -58,6 +55,6 @@
                 Style="{StaticResource CaptionTextBlockStyle}"
                 Text="Fluent 2 · Windows 11 · Copyright (c) 2026 Enhanced Snap contributors · MIT License" />
         </StackPanel>
-        </Grid>
+        </controls:PageContentPanel>
     </ScrollViewer>
 </Page>

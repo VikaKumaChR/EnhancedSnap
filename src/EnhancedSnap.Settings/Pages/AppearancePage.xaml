@@ -7,10 +7,7 @@
     xmlns:toolkit="using:CommunityToolkit.WinUI.Controls">
 
     <ScrollViewer>
-        <Grid Margin="{StaticResource PageContentMargin}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" MaxWidth="{StaticResource PageMaxWidth}" />
-            </Grid.ColumnDefinitions>
+        <controls:PageContentPanel>
         <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
             <TextBlock Margin="0,24,0,0" Style="{StaticResource TitleTextBlockStyle}" Text="{x:Bind S.Nav_Appearance}" />
             <TextBlock Margin="0,4,0,16" Style="{StaticResource PageDescriptionTextBlockStyle}" Text="{x:Bind S.Appearance_Desc}" />
@@ -33,7 +30,7 @@
                         BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
                         BorderThickness="1"
                         CornerRadius="{StaticResource OverlayCornerRadius}">
-                        <controls:LayoutPreview x:Name="Preview" ReferenceWidthEpx="1000" ShowWindows="True" />
+                        <controls:LayoutPreview x:Name="Preview" ClipCornerRadius="7" ReferenceWidthEpx="1000" ShowWindows="True" />
                     </Border>
                     <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind S.Preview_Caption}" />
                 </StackPanel>
@@ -79,6 +76,6 @@
                 </ComboBox>
             </toolkit:SettingsCard>
         </StackPanel>
-        </Grid>
+        </controls:PageContentPanel>
     </ScrollViewer>
 </Page>

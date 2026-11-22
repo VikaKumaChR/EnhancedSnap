@@ -9,10 +9,8 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- Layout tokens (Windows 11 Settings rhythm: 4 px card spacing, 28 px between sections). -->
-            <x:Double x:Key="PageMaxWidth">1000</x:Double>
-            <Thickness x:Key="PageHeaderMargin">40,24,40,16</Thickness>
-            <Thickness x:Key="PageContentMargin">40,0,40,40</Thickness>
+            <!-- Layout tokens (Windows 11 Settings rhythm: 4 px card spacing, 28 px between sections). The page column and
+                 its equal left and right space are Controls/PageContentPanel. -->
             <x:Double x:Key="SettingsCardSpacing">4</x:Double>
 
             <Style x:Key="SectionHeaderTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">

@@ -9,6 +9,13 @@ public static class AppInfo
     public const string EngineExeName = "EnhancedSnap.exe";
     public const string SettingsExeName = "EnhancedSnap.Settings.exe";
 
+    /// <summary>
+    /// The taskbar's ID for the settings window when Enhanced Snap is installed (not packaged), the same as the Start
+    /// menu shortcut's (installer/Package.wxs): the window's button, jump list and pin are "Enhanced Snap", not the
+    /// executable's name. The Store package has its own: the package family and the application's Id.
+    /// </summary>
+    public const string AppUserModelId = "EnhancedSnap.EnhancedSnap";
+
     /// <summary>Hidden top-level window owned by the engine. Top-level (not message-only) so it
     /// receives broadcasts such as WM_DISPLAYCHANGE, WM_SETTINGCHANGE and TaskbarCreated.</summary>
     public const string EngineWindowClass = "EnhancedSnap.Engine.Host";

@@ -23,6 +23,11 @@ draw with the same compositor and materials as Windows 11.
 - **The settings app is a separate process** (WinUI 3) that only runs while its window is open. Five seconds after it
   goes to the background it switches to efficiency mode and gives its memory back to Windows (measured: 93 MB in
   front → 1.5 MB private working set in the background).
+- **Wallpaper previews are read on demand.** The desktop pictures in Settings read your wallpaper when a page with one
+  opens, when Windows announces a new wallpaper and when the window comes back to the
+  front — never on a timer — and decode it off the UI thread straight to
+  preview size: about 1280 px on the longer side (about 4 MB), and only the part your monitor shows, photos turned
+  by their EXIF tag included. A tiled wallpaper is decoded once, at its own scale, and repeated.
 
 ## Rendering
 
@@ -34,7 +39,7 @@ needed.
 
 Materials follow Fluent 2: transient zones use **Acrylic** (host-backdrop blur and tint), and the settings window uses
 **Mica**. Acrylic falls back to a solid color in **Energy saver**, with transparency effects off, in high contrast and
-in Remote Desktop; animations stop in Energy saver or when Windows animation effects are off. You can also choose
-*Solid* and *No animations* yourself.
+in Remote Desktop, and so do the Mica windows and taskbar in the settings' desktop previews; animations stop in Energy
+saver or when Windows animation effects are off. You can also choose *Solid* and *No animations* yourself.
 
 How this is built: [Design → Energy & performance](DESIGN.md#5-energy--performance).

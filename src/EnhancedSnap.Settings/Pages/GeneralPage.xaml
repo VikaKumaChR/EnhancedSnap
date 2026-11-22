@@ -7,10 +7,7 @@
     xmlns:controls="using:EnhancedSnap.Settings.Controls">
 
     <ScrollViewer>
-        <Grid Margin="{StaticResource PageContentMargin}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" MaxWidth="{StaticResource PageMaxWidth}" />
-            </Grid.ColumnDefinitions>
+        <controls:PageContentPanel>
         <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
             <TextBlock Margin="0,24,0,0" Style="{StaticResource TitleTextBlockStyle}" Text="{x:Bind S.Nav_General}" />
             <TextBlock Margin="0,4,0,16" Style="{StaticResource PageDescriptionTextBlockStyle}" Text="{x:Bind S.General_Desc}" />
@@ -24,7 +21,8 @@
                 Severity="Informational"
                 Title="{x:Bind S.Welcome_Title}" />
 
-            <!-- Status hero: live preview of the primary display's layout with the current spacing. -->
+            <!-- Status hero: live preview of the primary display's layout with the current spacing. The frame hugs the
+                 picture (at most 224 × 140) for any monitor shape, centred in a fixed column so the text never moves. -->
             <Border
                 Padding="20"
                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
@@ -33,16 +31,18 @@
                 CornerRadius="{StaticResource OverlayCornerRadius}">
                 <Grid ColumnSpacing="24">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="224" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <Border
-                        Width="224"
-                        Height="140"
+                        MaxWidth="224"
+                        MaxHeight="140"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
                         BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
                         BorderThickness="1"
                         CornerRadius="{StaticResource OverlayCornerRadius}">
-                        <controls:LayoutPreview x:Name="HeroPreview" ReferenceWidthEpx="1000" ShowWindows="True" />
+                        <controls:LayoutPreview x:Name="HeroPreview" ClipCornerRadius="7" ReferenceWidthEpx="1000" ShowWindows="True" />
                     </Border>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6">
                         <StackPanel Orientation="Horizontal" Spacing="10">
@@ -170,6 +170,6 @@
                 </ComboBox>
             </toolkit:SettingsCard>
         </StackPanel>
-        </Grid>
+        </controls:PageContentPanel>
     </ScrollViewer>
 </Page>

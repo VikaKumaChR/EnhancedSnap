@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using EnhancedSnap.Core;
+using EnhancedSnap.Core.Diagnostics;
 using EnhancedSnap.Core.Interop;
 using EnhancedSnap.Core.Localization;
 using EnhancedSnap.Settings.Pages;
@@ -16,10 +17,29 @@ public sealed partial class MainWindow : Window
 {
     private const int DefaultWidthEpx = 1080;
     private const int DefaultHeightEpx = 780;
+    private const int MinimumWidthEpx = 520;
+    private const int MinimumHeightEpx = 480;
+    private const double MinimalPaneButtonInsetEpx = 44;
 
     public MainWindow(SettingsPage startPage)
     {
         InitializeComponent();
+
+        // Before the window shows: the taskbar names its button, jump list and pin "Enhanced Snap" (Prob14).
+        nint hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        Services.TaskbarIdentity.Apply(hwnd);
+        Closed += (_, _) => Services.TaskbarIdentity.Clear(hwnd);
+
+        // A new wallpaper announced while the window is open: the desktop previews follow at once.
+        Services.WindowMessages.WatchWallpaper(hwnd, () =>
+        {
+            bool shown = Services.WallpaperPreview.HasViewers;
+            Log.Info($"Desktop wallpaper changed{(shown ? ": desktop previews read it again" : "; no desktop preview on screen")}");
+            if (shown)
+            {
+                Services.WallpaperPreview.Refresh(DispatcherQueue);
+            }
+        });
 
         // Fluent 2 material for long-lived app windows: Mica. WinUI falls back to a solid color by itself
         // when transparency is off, in Energy saver or on unsupported hardware.
@@ -30,14 +50,12 @@ public sealed partial class MainWindow : Window
         AppWindow.SetIcon(Path.Combine(AppInfo.BaseDirectory, "Assets", "EnhancedSnap.ico"));
         AppTitleBar.Loaded += (_, _) =>
         {
-            UpdateTitleIcon();
-            AppTitleBar.XamlRoot.Changed += (_, _) => UpdateTitleIcon();
+            UpdateForScale();
+            AppTitleBar.XamlRoot.Changed += (_, _) => UpdateForScale();
         };
-        if (AppWindow.Presenter is OverlappedPresenter presenter)
-        {
-            presenter.PreferredMinimumWidth = Scale(520);
-            presenter.PreferredMinimumHeight = Scale(480);
-        }
+        Nav.Loaded += (_, _) => UpdateContentInset();
+        Nav.DisplayModeChanged += (_, _) => UpdateContentInset();
+        ApplyMinimumSize();
 
         SizeAndCenter();
         ApplyTexts();
@@ -51,22 +69,53 @@ public sealed partial class MainWindow : Window
 
     // AppIcon-<n>.png from tools/make_icons.py: the small sizes are pixel-fitted, so draw the one made for this scale.
     private static readonly int[] TitleIconSizes = [16, 20, 24, 28, 32, 36, 40, 48];
-    private double _titleIconScale;
+    private double _scale;
 
-    /// <summary>16 epx title bar icon from the PNG rendered for the window's display scale (no resampling blur).</summary>
-    private void UpdateTitleIcon()
+    /// <summary>
+    /// What is sized in physical pixels follows the window's display scale: the title bar icon and the minimum size.
+    /// XamlRoot.Changed also fires on every resize, so only a new scale does anything.
+    /// </summary>
+    private void UpdateForScale()
     {
         double scale = AppTitleBar.XamlRoot?.RasterizationScale ?? 1;
-        if (scale == _titleIconScale)
+        if (scale == _scale)
         {
             return;
         }
 
-        _titleIconScale = scale;
+        _scale = scale;
+        UpdateTitleIcon(scale);
+        ApplyMinimumSize();
+    }
+
+    /// <summary>16 epx title bar icon from the PNG rendered for the window's display scale (no resampling blur).</summary>
+    private void UpdateTitleIcon(double scale)
+    {
         int needed = (int)Math.Round(16 * scale);
         int size = TitleIconSizes.FirstOrDefault(s => s >= needed, TitleIconSizes[^1]);
         TitleIcon.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri($"ms-appx:///Assets/AppIcon-{size}.png"));
     }
+
+    /// <summary>
+    /// 520 × 480 epx in the physical pixels the presenter takes. Set again whenever the display scale changes: kept from
+    /// the monitor the window opened on, a move to one with a larger scale would let it shrink below what the pages are
+    /// laid out for.
+    /// </summary>
+    private void ApplyMinimumSize()
+    {
+        if (AppWindow.Presenter is OverlappedPresenter presenter)
+        {
+            presenter.PreferredMinimumWidth = Scale(MinimumWidthEpx);
+            presenter.PreferredMinimumHeight = Scale(MinimumHeightEpx);
+        }
+    }
+
+    /// <summary>
+    /// Under 640 epx the NavigationView is Minimal and its pane button floats over the content's top-left corner: the
+    /// pages then start below it, so it never sits on a page title. Left and right keep their equal gutters.
+    /// </summary>
+    private void UpdateContentInset() =>
+        ContentFrame.Margin = Nav.DisplayMode == NavigationViewDisplayMode.Minimal ? new Thickness(0, MinimalPaneButtonInsetEpx, 0, 0) : new Thickness(0);
 
     /// <summary>In the background for 5 s → efficiency mode and a trimmed working set; one-shot, no polling.</summary>
     private void OnActivated(object sender, WindowActivatedEventArgs args)
@@ -87,6 +136,13 @@ public sealed partial class MainWindow : Window
         {
             _backgroundTimer?.Stop();
             Services.BackgroundFootprint.Leave();
+
+            // Back from Windows Settings with a new wallpaper, or the next picture of a slideshow: re-read it, but only
+            // while a desktop preview is on screen (the pages with one also read it when they open).
+            if (Services.WallpaperPreview.HasViewers)
+            {
+                Services.WallpaperPreview.Refresh(DispatcherQueue);
+            }
         }
     }
 

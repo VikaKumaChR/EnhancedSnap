@@ -79,6 +79,9 @@ internal static unsafe partial class NativeMethods
     public const uint WM_RBUTTONDOWN = 0x0204;
     public const uint WM_RBUTTONUP = 0x0205;
     public const uint WM_MBUTTONDOWN = 0x0207;
+    public const uint WM_MOUSEWHEEL = 0x020A;
+    public const uint WM_MOUSEHWHEEL = 0x020E;
+    public const int WHEEL_DELTA = 120;
     public const uint WM_CAPTURECHANGED = 0x0215;
     public const uint WM_MOUSELEAVE = 0x02A3;
     public const uint TME_LEAVE = 0x0002;
@@ -106,6 +109,14 @@ internal static unsafe partial class NativeMethods
     public const int VK_Z = 0x5A;
     public const int IDC_HAND = 32649;
     public const uint SPI_GETWINARRANGING = 0x0082;
+    public const uint SPI_GETMOUSEHOVERTIME = 0x0066;
+
+    /// <summary>How long the pointer rests for a hover, as the user set it (SPI_GETMOUSEHOVERTIME), else <paramref name="fallback"/>.</summary>
+    public static uint MouseHoverTimeMs(uint fallback)
+    {
+        uint ms = 0;
+        return SystemParametersInfo(SPI_GETMOUSEHOVERTIME, 0, &ms, 0) && ms > 0 ? ms : fallback;
+    }
     public const uint SPI_SETWINARRANGING = 0x0083;
     public const uint SPIF_UPDATEINIFILE = 0x01;
     public const uint SPIF_SENDCHANGE = 0x02;

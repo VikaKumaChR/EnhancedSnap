@@ -7,17 +7,101 @@
     xmlns:controls="using:EnhancedSnap.Settings.Controls"
     xmlns:toolkit="using:CommunityToolkit.WinUI.Controls">
 
+    <Page.Resources>
+        <!-- For pictograms and captions built in code: a ThemeResource in a style follows light, dark and high contrast. -->
+        <Style x:Key="LayoutGlyphStyle" TargetType="PathIcon">
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Style>
+        <Style x:Key="SecondaryCaptionStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Style>
+    </Page.Resources>
+
+    <!--
+        Three sections, each a header, what it is for in one line, and (for the first two) where it applies:
+        the snap layout menu (all displays: dragging to the top, the maximize button, Win + Z), the zones of the display
+        chosen here (Shift + drag, Win + arrow keys), and the user's own layouts, which both can use.
+    -->
     <ScrollViewer>
-        <Grid Margin="{StaticResource PageContentMargin}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" MaxWidth="{StaticResource PageMaxWidth}" />
-            </Grid.ColumnDefinitions>
+        <controls:PageContentPanel>
         <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
             <TextBlock Margin="0,24,0,0" Style="{StaticResource TitleTextBlockStyle}" Text="{x:Bind S.Nav_Layouts}" />
             <TextBlock Margin="0,4,0,8" Style="{StaticResource PageDescriptionTextBlockStyle}" Text="{x:Bind S.Layouts_Desc}" />
 
-            <!-- Displays -->
-            <TextBlock Style="{StaticResource SectionHeaderTextBlockStyle}" Margin="1,16,0,8" Text="{x:Bind S.Layouts_Display}" />
+            <!-- The snap layout menu (suggestion00): default (default snap), top and bottom, and the user's own set (customization) -->
+            <Grid Margin="1,16,0,0" ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind S.SnapBar_Header}" TextWrapping="Wrap" />
+                <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind S.Layouts_ScopeAll}" />
+            </Grid>
+            <TextBlock
+                x:Name="MenuCaption"
+                Margin="1,0,0,4"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                TextWrapping="Wrap" />
+            <toolkit:SettingsCard Description="{x:Bind S.SnapBar_StartSetDesc}" Header="{x:Bind S.SnapBar_StartSet}">
+                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE7C4;" /></toolkit:SettingsCard.HeaderIcon>
+                <ComboBox MinWidth="160" AutomationProperties.Name="{x:Bind S.SnapBar_StartSet}" SelectedIndex="{x:Bind Vm.SnapBarStartIndex, Mode=TwoWay}">
+                    <ComboBoxItem Content="{x:Bind S.SnapBar_Classic}" />
+                    <ComboBoxItem Content="{x:Bind S.SnapBar_Horizontal}" />
+                    <ComboBoxItem Content="{x:Bind S.SnapBar_Custom}" />
+                </ComboBox>
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Name="ClassicSetCard" Description="{x:Bind S.SnapBar_ClassicDesc}" Header="{x:Bind S.SnapBar_Classic}">
+                <StackPanel x:Name="ClassicPreviews" Orientation="Horizontal" Spacing="6" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Name="HorizontalSetCard" Description="{x:Bind S.SnapBar_HorizontalDesc}" Header="{x:Bind S.SnapBar_Horizontal}">
+                <StackPanel Orientation="Horizontal" Spacing="16">
+                    <StackPanel x:Name="HorizontalPreviews" VerticalAlignment="Center" Orientation="Horizontal" Spacing="6" />
+                    <ToggleSwitch
+                        AutomationProperties.Name="{x:Bind S.SnapBar_Horizontal}"
+                        IsOn="{x:Bind Vm.SnapBarShowHorizontal, Mode=TwoWay}"
+                        OffContent="{x:Bind S.Toggle_Off}"
+                        OnContent="{x:Bind S.Toggle_On}" />
+                </StackPanel>
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Name="CustomSetCard" Header="{x:Bind S.SnapBar_Custom}">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <TextBlock x:Name="CustomSetCount" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <DropDownButton x:Name="AddToSetButton" AutomationProperties.Name="{x:Bind S.SnapBar_AddLayout}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon FontSize="14" Glyph="&#xE710;" />
+                            <TextBlock Text="{x:Bind S.SnapBar_AddLayout}" />
+                        </StackPanel>
+                        <DropDownButton.Flyout>
+                            <MenuFlyout x:Name="AddToSetMenu" Placement="BottomEdgeAlignedRight" />
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+                </StackPanel>
+            </toolkit:SettingsCard>
+            <StackPanel x:Name="CustomSetList" Spacing="{StaticResource SettingsCardSpacing}" />
+            <TextBlock
+                x:Name="CustomSetEmpty"
+                Margin="1,4,0,0"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Text="{x:Bind S.SnapBar_CustomEmpty}"
+                TextWrapping="Wrap" />
+
+            <!-- Display zones: the zones of the display chosen here -->
+            <Grid Margin="1,28,0,0" ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind S.Layouts_Display}" TextWrapping="Wrap" />
+                <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind S.Layouts_ScopeThis}" />
+            </Grid>
+            <TextBlock
+                x:Name="ZonesCaption"
+                Margin="1,0,0,4"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                TextWrapping="Wrap" />
             <GridView
                 x:Name="DisplayGrid"
                 IsItemClickEnabled="False"
@@ -40,7 +124,7 @@
                 </GridView.ItemTemplate>
             </GridView>
 
-            <!-- Templates -->
+            <!-- Zone templates for that display -->
             <Grid Margin="1,20,0,8">
                 <TextBlock VerticalAlignment="Center" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind S.Layouts_Templates}" />
                 <Button HorizontalAlignment="Right" Click="PreviewButton_Click">
@@ -76,8 +160,14 @@
             </GridView>
             <TextBlock Margin="1,4,0,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind S.Layouts_PreviewHint}" />
 
-            <!-- Custom layouts -->
-            <TextBlock Style="{StaticResource SectionHeaderTextBlockStyle}" Text="{x:Bind S.Layouts_Custom}" />
+            <!-- My layouts: the user's own, for the zones and the menu alike -->
+            <TextBlock Margin="1,28,0,0" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind S.Layouts_Custom}" />
+            <TextBlock
+                Margin="1,0,0,4"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Text="{x:Bind S.Layouts_MineCaption}"
+                TextWrapping="Wrap" />
             <toolkit:SettingsCard Description="{x:Bind S.Layouts_CustomDesc}" Header="{x:Bind S.Layouts_Custom}">
                 <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE70F;" /></toolkit:SettingsCard.HeaderIcon>
                 <Button Click="NewLayout_Click" Style="{StaticResource AccentButtonStyle}">
@@ -95,6 +185,6 @@
                 Style="{StaticResource CaptionTextBlockStyle}"
                 Text="{x:Bind S.Layouts_CustomEmpty}" />
         </StackPanel>
-        </Grid>
+        </controls:PageContentPanel>
     </ScrollViewer>
 </Page>

@@ -4,7 +4,7 @@
 
 <p align="center">The Windows Snap replacement for Windows 11: the same gestures, layouts and snap groups,<br>with rounded corners, even spacing and Fluent 2 materials.</p>
 
-<p align="center"><a href="README.zh-TW.md">正體中文</a> · <a href="docs/USAGE.md">Usage</a> · <a href="docs/ENERGY.md">Energy &amp; rendering</a> · <a href="docs/LIMITATIONS.md">Limitations</a> · <a href="docs/DESIGN.md">Design</a> · <a href="docs/BUILDING.md">Build</a> · <a href="docs/ROADMAP.md">Roadmap</a> · <a href="CHANGELOG.md">Changelog</a> · <a href="PRIVACY.md">Privacy</a></p>
+<p align="center"><a href="README.zh-TW.md">正體中文</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="docs/USAGE.md">Usage</a> · <a href="docs/ENERGY.md">Energy &amp; rendering</a> · <a href="docs/LIMITATIONS.md">Limitations</a> · <a href="docs/DESIGN.md">Design</a> · <a href="docs/BUILDING.md">Build</a> · <a href="docs/ROADMAP.md">Roadmap</a> · <a href="CHANGELOG.md">Changelog</a> · <a href="PRIVACY.md">Privacy</a></p>
 
 <p align="center"><img src="docs/images/demo-compare.gif" width="800" alt="The top of the seam between two snapped windows, close up. With Windows Snap the corners are square and the windows touch (0 px). With Enhanced Snap the corners stay rounded and there are 8 px between the windows and the screen edge."></p>
 
@@ -28,8 +28,9 @@ arranged become Enhanced Snap groups.
 
 | Windows Snap | Enhanced Snap |
 | --- | --- |
-| Snap layouts on the maximize button and <kbd>Win</kbd> + <kbd>Z</kbd> | The same flyout, with Windows' layouts and **snap suggestions** in Windows' own look, plus a full-size preview of the zone you point at |
-| Drag to a side, a corner or the top; the snap bar | The same gestures, and windows **keep their rounded corners and spacing** |
+| Snap layouts on the maximize button and <kbd>Win</kbd> + <kbd>Z</kbd> | The same flyout, with Windows' layouts and **snap suggestions** in Windows' own look, plus a full-size preview of the zone you point at; **the same sets as the snap bar** |
+| Drag to a side, a corner or the top; the snap bar | The same gestures, and windows **keep their rounded corners and spacing**; near the top the snap bar peeks, and slides all the way down when the pointer reaches the top centre |
+| The snap bar always offers the same few layouts | **Your own layouts in the snap layout menu**: Default, Top and bottom and a Custom set of up to 12; rest the pointer on a set's name to switch, or turn the wheel while you drag |
 | Snap Assist | Live thumbnails in the remaining zones; mouse or keyboard |
 | Snap groups in taskbar previews, <kbd>Alt</kbd> + <kbd>Tab</kbd> and Task View | The same **Group \| …** entries — peek from the taskbar, click to bring the group back, **X closes all its windows** — listed first when you switch from one of its windows |
 | A group's empty zone stays empty until Snap Assist runs again | **Drag any window into the empty space** and it joins the group |
@@ -41,7 +42,7 @@ arranged become Enhanced Snap groups.
 
 - **Spacing you set** – between windows and around the screen edges, scaled for each monitor's DPI; every window's
   visible frame lands on its zone to the pixel.
-- **Layouts for each monitor** – 11 templates, from halves and thirds to a center focus for ultrawide screens and rows
+- **Layouts for each monitor** – 14 templates, from halves and thirds to a center focus for ultrawide screens and rows
   for portrait ones, plus your own columns and rows.
 - **Zones on demand** – hold <kbd>Shift</kbd> while dragging to see every zone; add <kbd>Ctrl</kbd> to span several.
 - **Keyboard** – <kbd>Win</kbd> + arrow keys move a window between zones and across monitors; <kbd>Win</kbd> +

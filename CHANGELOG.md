@@ -1,5 +1,61 @@
 # Changelog
 
+## Unreleased
+
+- **Your own layouts in the snap layout menu** (suggestion00): the snap bar that opens when you drag a window to the
+  top of the screen and the flyout on the maximize button (and Win + Z) now offer the same sets of layouts, named
+  below them: **Default** (what Windows offers for the display, led by the display's own zone layout when that is
+  another one), **Top and bottom** (halves, two-thirds on top, a main window above
+  two, three rows) and **Custom**, up to 12 built-in or custom layouts of your choice in your order. Rest the pointer
+  on a set's name for Windows' hover time to switch (in the flyout you can also click it; while you drag, the mouse
+  wheel switches too); the set you pick in either opens first in both next time. Set it up in *Settings → Layouts →
+  Snap layout menu*, where layouts in lists now show as clear pictograms with rounded corners. Layouts are stored as
+  proportions, never pixels, so a set fits every display. Three new built-in layouts come with it: *Two-thirds top*,
+  *Main and two below* and *Three rows*. Below a display stacked above another, the snap bar now waits until the
+  pointer rests at the top, instead of opening as it passes on its way up.
+- **The snap bar peeks, like Windows'**: as you drag a window towards the top of the screen, the snap bar's edge shows
+  at the top; it slides all the way down when the pointer reaches the top centre or that edge, back up when the pointer
+  leaves it, and away when you drag further down. A drag that starts at the top — a maximized window taken by its
+  title bar — has to leave the top first, so the snap bar doesn't open under the pointer before the window has moved.
+  Its set names are touch-sized and as wide as the name in every language.
+- **A clearer Layouts page**: it starts with the **snap layout menu** (all displays: dragging to the top, the maximize
+  button, Win + Z), then **display zones** (the display you pick: Shift + drag and Win + arrow keys; its templates are
+  now *zone templates*) and **my layouts**, each with a line on what it is for.
+- **Windows Snap switched back on in Windows Settings**: while Enhanced Snap runs, its snap bar, edges, flyout and Snap
+  Assist now stand down as well, so the two never show at once.
+- **No more wait when Windows Snap comes back**: pausing Enhanced Snap, turning off *Replace Windows Snap*,
+  uninstalling it, signing out, shutting down and switching Windows Snap back on in Windows Settings held Enhanced Snap
+  for seconds (3 to 13 when pausing, about 5 at uninstall and shutdown), and kept Windows waiting at shutdown. Giving
+  Windows Snap back announces the change to every window, Enhanced Snap's own included, which took it for you switching
+  Windows Snap on and gave it back again, up to 31 times over. It now gives it back once, and when Windows ends the
+  session or the installer closes Enhanced Snap, it exits straight away.
+- **"Enhanced Snap" on the taskbar** (Prob14): right-clicking the settings window's taskbar button showed
+  *EnhancedSnap.Settings*; it now shows *Enhanced Snap*. The window carries the Start menu shortcut's ID, so its button
+  groups with the shortcut, and a pinned button starts Enhanced Snap and opens Settings.
+- **A README in Simplified Chinese** (README.zh-CN.md), in the words of Windows' own Simplified Chinese interface.
+- **Dividers are easier to grab** (V_Prob04): the ends of a gap between grouped windows now belong to the divider —
+  at the top and bottom of the screen and next to empty space — so the pointer no longer lands on one window's corner
+  and resizes that window alone. At the top of the screen you can push the pointer against the edge, above the seam,
+  whatever the margin. A divider takes only the gap and those ends, less any part a window reaches into: windows' own
+  edges and content are never covered, even where an app is larger than its space, and the cursor always shows what a
+  press there will do. The bar that
+  appears over the seam is only drawn, so where it lies over a window's edge, that edge stays the window's. One
+  deliberate exception: a gap narrower than 6 effective pixels still gets a strip that wide, so the divider stays easy
+  to grab, and that strip reaches up to 3 effective pixels over the windows' edges beside it.
+- **Dividers move only as far as you drag them**: pressing beside the seam, on one of its ends say, no longer makes
+  the divider jump to the pointer, and a click that doesn't move past Windows' drag threshold leaves it where it is.
+- **Your wallpaper in the previews** (Suggestion01_01, Suggestion01_02): the desktop pictures on the General and
+  Appearance pages show your own wallpaper, fitted the way Windows fits it (fill, fit, stretch, center, tile or span;
+  a tiled picture at its own size), in a rounded display frame shaped like your monitor, as in Settings →
+  Personalization. The windows and taskbar in them are Mica, so they take on its colors like real ones; like Windows'
+  own Mica they turn solid with transparency effects off, in Energy saver, in high contrast and in Remote Desktop. The
+  taskbar follows Windows' light or dark mode, as the real one does. The previews follow the wallpaper as soon as
+  Windows announces a new one, and again whenever you come back to the window.
+- **Even space on both sides of every settings page** (Suggestion02): the content now keeps the same distance from the
+  left and right edges at any window size, like the WinUI 3 Gallery, instead of leaving a wide gap on the right of
+  large windows. In a narrow window, where the navigation button floats over the page, the page starts below it.
+- **Screen readers and voice access can press *Open settings folder* and *Open logs*** in Settings → About.
+
 ## 1.0.1 — 2026-11-05
 
 Fixes from testing the Microsoft Store package on a real install.
