@@ -4,7 +4,9 @@
 
 <p align="center">The Windows Snap replacement for Windows 11: the same gestures, layouts and snap groups,<br>with rounded corners, even spacing and Fluent 2 materials.</p>
 
-<p align="center"><a href="README.zh-TW.md">正體中文</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="docs/USAGE.md">Usage</a> · <a href="docs/ENERGY.md">Energy &amp; rendering</a> · <a href="docs/LIMITATIONS.md">Limitations</a> · <a href="docs/DESIGN.md">Design</a> · <a href="docs/BUILDING.md">Build</a> · <a href="docs/ROADMAP.md">Roadmap</a> · <a href="CHANGELOG.md">Changelog</a> · <a href="PRIVACY.md">Privacy</a></p>
+<p align="center"><a href="https://apps.microsoft.com/detail/9p14s84633ll"><b>Get it from the Microsoft Store</b></a> · or from <a href="https://github.com/VikaKumaChR/EnhancedSnap/releases/latest">GitHub Releases</a> (<a href="#download">what to check first</a>)</p>
+
+<p align="center"><a href="README.zh-TW.md">正體中文</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="docs/USAGE.md">Usage</a> · <a href="docs/ENERGY.md">Energy &amp; rendering</a> · <a href="docs/LIMITATIONS.md">Limitations</a> · <a href="docs/DESIGN.md">Design</a> · <a href="docs/BUILDING.md">Build</a> · <a href="docs/ROADMAP.md">Roadmap</a> · <a href="CHANGELOG.md">Changelog</a> · <a href="PRIVACY.md">Privacy</a> · <a href="docs/CODE_SIGNING.md">Code signing</a></p>
 
 <p align="center"><img src="docs/images/demo-compare.gif" width="800" alt="The top of the seam between two snapped windows, close up. With Windows Snap the corners are square and the windows touch (0 px). With Enhanced Snap the corners stay rounded and there are 8 px between the windows and the screen edge."></p>
 
@@ -53,6 +55,20 @@ arranged become Enhanced Snap groups.
 - **Light** – no timers or polling while idle, about 7 MB of memory ([energy and rendering](docs/ENERGY.md)).
 - **Private** – no telemetry and no network connections ([privacy](PRIVACY.md)).
 - **Excluded apps**, **launch at sign-in**, **English / 繁體中文 / 简体中文**.
+
+## Download
+
+- **[Microsoft Store](https://apps.microsoft.com/detail/9p14s84633ll)** (recommended): installs and updates through the
+  Store. Microsoft signs the Store package, so Windows shows no SmartScreen warning for it.
+- **[GitHub Releases](https://github.com/VikaKumaChR/EnhancedSnap/releases/latest)**: `EnhancedSnap-<version>-x64.msi`
+  (per-user install, no admin prompt) or the portable ZIP. They are not code-signed yet, so Microsoft Edge may say the
+  file *isn't commonly downloaded*, Chrome may call it uncommon, Windows may show *Windows protected your PC* with an
+  unknown publisher, and Smart App Control, if it is on, may block them. That means Windows doesn't know the file yet,
+  not that anything was found in it.
+- **Check a GitHub download before you open it**: in PowerShell, in your Downloads folder, run
+  `Get-FileHash .\EnhancedSnap-<version>-x64.msi`. The hash must match the SHA-256 shown next to the file on the
+  release page and its line in `SHA256SUMS.txt`; if it doesn't, delete the file. If Smart App Control blocks the app,
+  there is no per-app exception: use the Store version.
 
 ## License
 

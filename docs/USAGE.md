@@ -9,15 +9,20 @@ browser, say. Enhanced Snap keeps the way Windows does it and adds rounded corne
 
 | Where | Package | Notes |
 | --- | --- | --- |
-| **Microsoft Store** | Enhanced Snap | Installs and updates through the Store; starts at sign-in (listed in *Settings → Apps → Startup*). Doesn't offer *Snap apps running as administrator*. |
+| [**Microsoft Store**](https://apps.microsoft.com/detail/9p14s84633ll) | Enhanced Snap | Installs and updates through the Store; starts at sign-in (listed in *Settings → Apps → Startup*). Doesn't offer *Snap apps running as administrator*. |
 | [**GitHub Releases**](https://github.com/VikaKumaChR/EnhancedSnap/releases/latest) | `EnhancedSnap-<version>-x64.msi` | Per-user install (no admin prompt) into `%LOCALAPPDATA%\Programs\Enhanced Snap`, Start menu shortcut, launches at sign-in, clean uninstall from *Settings → Apps*. Replaces any earlier preview build. |
 | | `EnhancedSnap-<version>-x64-portable.zip` | Unzip anywhere and run `EnhancedSnap.exe`. Enable *Launch at sign-in* in Settings if you want it. |
 
 Requirements: **Windows 11** (build 22000 or later), x64. Nothing else — the .NET code is compiled to native
 code and the Windows App SDK is bundled.
 
-> The GitHub downloads are not code-signed yet, so SmartScreen may ask for confirmation on first launch
-> (*More info → Run anyway*). Verify them with `SHA256SUMS.txt`. The Store version is signed by Microsoft.
+> The GitHub downloads are not code-signed yet. Microsoft Edge may say the file *isn't commonly downloaded*, Chrome may
+> call it uncommon, Windows may show *Windows protected your PC* with an unknown publisher, and Smart App Control, if it
+> is on, may block them: Windows doesn't know the file yet. Before you open one, check it:
+> `Get-FileHash .\EnhancedSnap-<version>-x64.msi` must match the SHA-256 next to the file on the release page and in
+> `SHA256SUMS.txt`; if it doesn't, delete the file. Smart App Control has no per-app exception. The
+> [Store version](https://apps.microsoft.com/detail/9p14s84633ll) is signed by Microsoft, and Windows doesn't warn about
+> it. See also [code signing](CODE_SIGNING.md).
 
 ## The basics
 

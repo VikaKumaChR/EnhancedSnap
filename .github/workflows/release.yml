@@ -2,6 +2,17 @@
 # Builds with build.ps1 on a Windows runner (Visual Studio with the C++ tools for NativeAOT, Windows SDK for the
 # MSIX), publishes a GitHub release with the MSI, the portable ZIP and SHA256SUMS.txt, and keeps the MSIX as a
 # workflow artifact for the Microsoft Store upload (Partner Center signs it; it isn't installable from GitHub).
+#
+# Code signing (docs/CODE_SIGNING.md): once the SignPath secret and variables below are set, the MSI and the portable
+# ZIP go to SignPath, which signs EnhancedSnap.exe and EnhancedSnap.Settings.exe inside both and then the MSI, after an
+# approver confirms the request. The workflow checks every signature and writes SHA256SUMS.txt from the signed files.
+# Without them, the release is published unsigned and its notes say so.
+#   secret   SIGNPATH_API_TOKEN            API token of the SignPath CI user that submits the request
+#   variable SIGNPATH_ORGANIZATION_ID      SignPath organization ID
+#   variable SIGNPATH_PROJECT_SLUG         SignPath project slug
+#   variable SIGNPATH_SIGNING_POLICY_SLUG  SignPath signing policy slug
+#   variable SIGNING_PUBLISHER             optional: signer name to expect (default "SignPath Foundation")
+#   variable STORE_URL                     optional: another Microsoft Store link for the notes (default: the listing)
 name: Release
 
 on:
@@ -9,11 +20,16 @@ on:
     tags: ['v*']
 
 permissions:
-  contents: write
+  contents: write   # create the release
+  actions: read     # SignPath reads this run and downloads the uploaded artifact
 
 jobs:
   release:
     runs-on: windows-latest
+    env:
+      SIGNPATH_CONFIGURED: ${{ secrets.SIGNPATH_API_TOKEN != '' && vars.SIGNPATH_ORGANIZATION_ID != '' && vars.SIGNPATH_PROJECT_SLUG != '' && vars.SIGNPATH_SIGNING_POLICY_SLUG != '' }}
+      EXPECTED_PUBLISHER: ${{ vars.SIGNING_PUBLISHER || 'SignPath Foundation' }}
+      STORE_URL: ${{ vars.STORE_URL || 'https://apps.microsoft.com/detail/9p14s84633ll' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -31,15 +47,111 @@ jobs:
         shell: pwsh
         run: ./build.ps1 -Version $env:VERSION
 
+      - name: Upload the unsigned installer and portable ZIP for signing
+        id: upload-unsigned
+        if: env.SIGNPATH_CONFIGURED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnhancedSnap-${{ env.VERSION }}-unsigned
+          path: |
+            artifacts/dist/EnhancedSnap-${{ env.VERSION }}-x64.msi
+            artifacts/dist/EnhancedSnap-${{ env.VERSION }}-x64-portable.zip
+          if-no-files-found: error
+
+      - name: Sign with SignPath (an approver confirms the request in SignPath)
+        if: env.SIGNPATH_CONFIGURED == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: artifacts/signed
+          parameters: |
+            version: "${{ env.VERSION }}"
+
+      - name: Use the signed files and check every signature
+        if: env.SIGNPATH_CONFIGURED == 'true'
+        shell: pwsh
+        run: |
+          $msiName = "EnhancedSnap-$env:VERSION-x64.msi"
+          $zipName = "EnhancedSnap-$env:VERSION-x64-portable.zip"
+          foreach ($name in $msiName, $zipName) {
+            $signed = Join-Path artifacts/signed $name
+            if (-not (Test-Path $signed)) { throw "SignPath returned no $name" }
+            Copy-Item $signed artifacts/dist -Force
+          }
+
+          # Unpack both: the ZIP as is, the MSI as an administrative image (files only, nothing is installed).
+          $check = Join-Path $env:RUNNER_TEMP 'signature-check'
+          Expand-Archive (Join-Path artifacts/dist $zipName) (Join-Path $check 'zip') -Force
+          $msi = (Resolve-Path (Join-Path artifacts/dist $msiName)).Path
+          $image = Join-Path $check 'msi'
+          $process = Start-Process msiexec.exe -ArgumentList '/a', "`"$msi`"", '/qn', "TARGETDIR=`"$image`"" -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "msiexec /a exited with $($process.ExitCode)" }
+
+          $files = @($msi)
+          foreach ($part in 'zip', 'msi') {
+            foreach ($exe in 'EnhancedSnap.exe', 'EnhancedSnap.Settings.exe') {
+              $found = @(Get-ChildItem (Join-Path $check $part) -Recurse -File -Filter $exe)
+              if ($found.Count -ne 1) { throw "Expected one $exe in the $part, found $($found.Count)" }
+              $files += $found[0].FullName
+            }
+          }
+
+          foreach ($file in $files) {
+            $signature = Get-AuthenticodeSignature $file
+            $signer = "$($signature.SignerCertificate.Subject)"
+            if ($signature.Status -ne 'Valid') { throw "$file : signature $($signature.Status)" }
+            if ($signer -notlike "*$env:EXPECTED_PUBLISHER*") { throw "$file : signed by '$signer', expected $env:EXPECTED_PUBLISHER" }
+            if (-not $signature.TimeStamperCertificate) { "::warning::$file has no timestamp; its signature ends when the certificate expires" }
+            "Valid  $file  ($signer)"
+          }
+
+      - name: SHA256SUMS.txt from the files being published
+        shell: pwsh
+        run: |
+          # build.ps1 wrote it before signing; signing changes the files, so it is written again here.
+          Get-ChildItem artifacts/dist -File | Where-Object { $_.Extension -in '.msi', '.zip' } |
+            ForEach-Object { '{0}  {1}' -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name } |
+            Set-Content artifacts/dist/SHA256SUMS.txt -Encoding ascii
+          Get-Content artifacts/dist/SHA256SUMS.txt
+
       - name: Release notes from CHANGELOG.md
         shell: pwsh
         run: |
           $text = Get-Content CHANGELOG.md -Raw -Encoding UTF8
           $match = [regex]::Match($text, "(?ms)^## $([regex]::Escape($env:VERSION)) .*?\r?\n(.*?)(?=^## |\z)")
           if (-not $match.Success) { throw "CHANGELOG.md has no section for $env:VERSION" }
-          $notes = $match.Groups[1].Value.Trim() + "`n`n" +
-            "**Downloads:** ``EnhancedSnap-$env:VERSION-x64.msi`` (recommended, per-user install) or the portable ZIP. " +
-            "Verify them with ``SHA256SUMS.txt``. Requires Windows 11 (build 22000 or later), x64."
+
+          $msi = "EnhancedSnap-$env:VERSION-x64.msi"
+          $zip = "EnhancedSnap-$env:VERSION-x64-portable.zip"
+          $signed = $env:SIGNPATH_CONFIGURED -eq 'true'
+          $policy = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/blob/main/docs/CODE_SIGNING.md"
+          $lines = @('**Download**', '')
+          if ($env:STORE_URL) {
+            $lines += "- **Microsoft Store** (recommended): $env:STORE_URL. Signed by Microsoft; updates through the Store."
+          }
+          if ($signed) {
+            $lines += "- **Installer:** ``$msi`` (per-user install, no admin prompt). **Portable:** ``$zip``. Both are signed by **$env:EXPECTED_PUBLISHER**."
+            $lines += "- **Check before you open:** ``Get-FileHash`` must match the SHA-256 shown next to each file under **Assets** and in ``SHA256SUMS.txt``, and ``Get-AuthenticodeSignature`` must say ``Valid`` with **$env:EXPECTED_PUBLISHER** as the signer. A new release can still get a browser or SmartScreen warning until it builds reputation. If anything doesn't match, delete the file."
+          } else {
+            $lines += "- **Installer:** ``$msi`` (per-user install, no admin prompt). **Portable:** ``$zip``. These are not code-signed yet, so Windows shows the publisher as unknown, and Smart App Control, if it is on, may block them."
+            $lines += "- **Check before you open:** ``Get-FileHash`` must match the SHA-256 shown next to each file under **Assets** and in ``SHA256SUMS.txt``. If it doesn't match, delete the file."
+          }
+          $lines += ''
+          $lines += 'Requires Windows 11 (build 22000 or later), x64.'
+          $lines += ''
+          if ($signed) {
+            $lines += "[Code signing policy]($policy): Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org)."
+          } else {
+            $lines += "[Code signing]($policy)"
+          }
+
+          $notes = $match.Groups[1].Value.Trim() + "`n`n" + ($lines -join "`n")
           Set-Content release-notes.md $notes -Encoding UTF8
 
       - name: GitHub release

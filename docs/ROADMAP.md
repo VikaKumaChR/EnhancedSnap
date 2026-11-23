@@ -19,7 +19,7 @@ product icon, and the Microsoft Store package next to the MSI and ZIP.
 | **Keyboard navigation in the snap layouts flyout** (number keys like Windows' Win + Z) | `src/EnhancedSnap/Ui/LayoutFlyout.cs` | Routed through the input hook's popup keys |
 | **Group first in Task View opened from the taskbar button or a touchpad gesture** | `src/EnhancedSnap/Input/InputHook.cs` | Today only Alt + Tab and Win + Tab put the group first; the button needs its position from UI Automation |
 | **Snap Assist for spanned/large layouts with paging** (more than 9 candidates) | `src/EnhancedSnap/Ui/SnapAssist.cs` | Scroll or page dots |
-| **Code signing** + **winget** manifest | `installer/Package.wxs` | Removes SmartScreen prompts for the GitHub downloads (the Store package is signed by Microsoft) |
+| **Code signing** + **winget** manifest | `.github/workflows/release.yml`, `installer/Package.wxs` | The release workflow is ready to sign through SignPath and needs a certificate: SignPath Foundation's free program once the project has more public adoption, or a paid subscription ([code signing](CODE_SIGNING.md)). Windows then shows a verified publisher, while SmartScreen reputation still builds with downloads. The winget manifest is still to do (the Store package is signed by Microsoft) |
 | **Update check** for the installer and ZIP versions | `src/EnhancedSnap.Settings/Pages/AboutPage.xaml.cs` | GitHub Releases API; skip when `AppInfo.IsPackaged` (the Store updates it) |
 | **Snapping elevated windows in the Store version** | `src/EnhancedSnap/Platform/Elevation.cs` | Needs an elevated start with package identity (`allowElevation` capability, Store approval) instead of a scheduled task |
 

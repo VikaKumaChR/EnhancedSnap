@@ -4,7 +4,9 @@
 
 <p align="center">Windows 11 上 Windows 贴靠的替代方案：同样的手势、布局和贴靠组，<br>再加上圆角、均匀的间距和 Fluent 2 材质。</p>
 
-<p align="center"><a href="README.md">English</a> · <a href="README.zh-TW.md">正體中文</a> · 文档（英文）：<a href="docs/USAGE.md">使用方法</a> · <a href="docs/ENERGY.md">节能与渲染</a> · <a href="docs/LIMITATIONS.md">已知限制</a> · <a href="docs/DESIGN.md">设计</a> · <a href="docs/BUILDING.md">构建</a> · <a href="docs/ROADMAP.md">路线图</a> · <a href="CHANGELOG.md">更新日志</a> · <a href="PRIVACY.md">隐私</a></p>
+<p align="center"><a href="https://apps.microsoft.com/detail/9p14s84633ll"><b>从 Microsoft Store 获取</b></a> · 或从 <a href="https://github.com/VikaKumaChR/EnhancedSnap/releases/latest">GitHub Releases</a> 下载（<a href="#下载">先看这里</a>）</p>
+
+<p align="center"><a href="README.md">English</a> · <a href="README.zh-TW.md">正體中文</a> · 文档（英文）：<a href="docs/USAGE.md">使用方法</a> · <a href="docs/ENERGY.md">节能与渲染</a> · <a href="docs/LIMITATIONS.md">已知限制</a> · <a href="docs/DESIGN.md">设计</a> · <a href="docs/BUILDING.md">构建</a> · <a href="docs/ROADMAP.md">路线图</a> · <a href="CHANGELOG.md">更新日志</a> · <a href="PRIVACY.md">隐私</a> · <a href="docs/CODE_SIGNING.md">代码签名</a></p>
 
 <p align="center"><img src="docs/images/demo-compare.gif" width="800" alt="两个贴靠窗口之间接缝上端的特写：Windows 贴靠是直角，两个窗口紧挨在一起（0 px）；Enhanced Snap 保留圆角，窗口之间和屏幕边缘都留有 8 px 间距。"></p>
 
@@ -47,6 +49,18 @@ Enhanced Snap 运行时会**关闭 Windows 贴靠，由自己接手**；暂停�
 - **轻量**：空闲时没有计时器、不轮询，内存占用约 7 MB（[节能与渲染](docs/ENERGY.md)，英文）。
 - **注重隐私**：没有遥测，也不会连接网络（[隐私](PRIVACY.md)，英文）。
 - **排除的应用**、**登录时启动**、**English／繁體中文／简体中文** 界面。
+
+## 下载
+
+- **[Microsoft Store](https://apps.microsoft.com/detail/9p14s84633ll)**（推荐）：通过 Store 安装和更新。Store 版由 Microsoft
+  签名，Windows 不会对它显示 SmartScreen 警告。
+- **[GitHub Releases](https://github.com/VikaKumaChR/EnhancedSnap/releases/latest)**：`EnhancedSnap-<版本>-x64.msi`（为当前用户安装，
+  不需要管理员权限）或免安装版 ZIP。这些文件目前还没有代码签名，所以 Microsoft Edge 可能提示文件不常被下载，Chrome 可能把它标为不常见，
+  Windows 可能显示 SmartScreen 的蓝色窗口（英文版标题 *Windows protected your PC*）、发布者未知，开着 Smart App Control 时也可能被拦下。
+  这表示 Windows 还不认识这个文件，并不是在文件里发现了什么。
+- **打开 GitHub 下载的文件前先验证**：在下载文件夹打开 PowerShell，运行 `Get-FileHash .\EnhancedSnap-<版本>-x64.msi`，
+  哈希值要和 Release 页面上文件旁边的 SHA-256 以及 `SHA256SUMS.txt` 里对应的一行完全相同；不同就删除文件。
+  如果 Smart App Control 拦下它，无法对单个应用放行，请改用 Store 版。
 
 ## 许可证
 

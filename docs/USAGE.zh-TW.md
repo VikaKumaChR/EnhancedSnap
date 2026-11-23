@@ -9,15 +9,18 @@ Enhanced Snap 沿用 Windows 原本的操作方式，再加上圓角與間距。
 
 | 管道 | 檔案 | 說明 |
 | --- | --- | --- |
-| **Microsoft Store** | Enhanced Snap | 由 Store 安裝與更新；登入時啟動（列在「設定 → 應用程式 → 啟動」）。不提供「貼齊以系統管理員身分執行的應用程式」。 |
+| [**Microsoft Store**](https://apps.microsoft.com/detail/9p14s84633ll) | Enhanced Snap | 由 Store 安裝與更新；登入時啟動（列在「設定 → 應用程式 → 啟動」）。不提供「貼齊以系統管理員身分執行的應用程式」。 |
 | [**GitHub Releases**](https://github.com/VikaKumaChR/EnhancedSnap/releases/latest) | `EnhancedSnap-<版本>-x64.msi` | 以目前使用者安裝（不需系統管理員權限）到 `%LOCALAPPDATA%\Programs\Enhanced Snap`，建立開始功能表捷徑、登入時啟動，可從「設定 → 應用程式」乾淨解除安裝；會取代先前的預覽版。 |
 | | `EnhancedSnap-<版本>-x64-portable.zip` | 免安裝版：解壓縮後執行 `EnhancedSnap.exe`；如需開機啟動，請在設定中開啟「登入時啟動」。 |
 
 系統需求：**Windows 11**（組建 22000 以上）、x64。不需要另外安裝任何執行環境
 （.NET 程式碼已編譯為原生程式碼，Windows App SDK 也已內含）。
 
-> GitHub 下載的檔案目前尚未進行程式碼簽章，第一次執行時 SmartScreen 可能會要求確認（「其他資訊 → 仍要執行」）。
-> 可用 `SHA256SUMS.txt` 驗證下載的檔案。Store 版由 Microsoft 簽章。
+> GitHub 下載的檔案目前尚未進行程式碼簽章。Microsoft Edge 可能提示檔案不常被下載，Chrome 可能標示為不常見，
+> Windows 可能顯示 SmartScreen 的藍色視窗（英文版標題 *Windows protected your PC*）、發行者不明，開著 Smart App Control 時
+> 也可能被擋下：這表示 Windows 還不認識這個檔案。開啟前請先核對：`Get-FileHash .\EnhancedSnap-<版本>-x64.msi` 的結果
+> 要和 Release 頁面上檔案旁的 SHA-256、以及 `SHA256SUMS.txt` 相同；不同就刪除檔案。Smart App Control 無法針對單一 app 放行。
+> [Store 版](https://apps.microsoft.com/detail/9p14s84633ll)由 Microsoft 簽章，Windows 不會對它發出警告。另見[程式碼簽章](CODE_SIGNING.md)。
 
 ## 基本操作
 

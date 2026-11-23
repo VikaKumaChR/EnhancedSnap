@@ -99,7 +99,8 @@
       <ComponentRef Id="CleanupInstallFolder" />
     </Feature>
 
-    <!-- UPDATE: Sign the MSI and binaries (Authenticode) to avoid SmartScreen prompts; add a winget manifest.
+    <!-- Signing: once there is a certificate, .github/workflows/release.yml sends this MSI to SignPath, which signs the
+         EXEs inside it and then the MSI (docs/CODE_SIGNING.md). UPDATE: add a winget manifest.
          The Microsoft Store channel is the MSIX built from packaging/ (signed by the Store). -->
   </Package>
 </Wix>

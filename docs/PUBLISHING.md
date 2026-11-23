@@ -4,8 +4,8 @@ Two channels, one build (`./build.ps1`):
 
 | Channel | Artifact | Signed by | Updates |
 | --- | --- | --- | --- |
-| GitHub Releases | `artifacts/dist/EnhancedSnap-<v>-x64.msi`, `…-portable.zip`, `SHA256SUMS.txt` | not signed yet (SmartScreen asks once) | download the new MSI; it upgrades in place |
-| Microsoft Store | `artifacts/store/EnhancedSnap-<v>-x64.msix` | Microsoft, at certification | automatic, through the Store |
+| GitHub Releases | `artifacts/dist/EnhancedSnap-<v>-x64.msi`, `…-portable.zip`, `SHA256SUMS.txt` | not signed yet, so SmartScreen and Smart App Control may stop them; the release workflow signs through SignPath once there is a certificate ([code signing](#code-signing-signpath)) | download the new MSI; it upgrades in place |
+| Microsoft Store ([listing](https://apps.microsoft.com/detail/9p14s84633ll)) | `artifacts/store/EnhancedSnap-<v>-x64.msix` | Microsoft, at certification | automatic, through the Store |
 
 ## Versions
 
@@ -39,13 +39,49 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-`.github/workflows/release.yml` then builds on a Windows runner, checks that the tag matches `<Version>`, creates the
-release *Enhanced Snap 1.0.0* with the MSI, the ZIP and `SHA256SUMS.txt`, and keeps the MSIX as a workflow artifact
-for the Store. `ci.yml` runs the unit tests on every push and pull request.
+`.github/workflows/release.yml` then builds on a Windows runner, checks that the tag matches `<Version>`, has the MSI
+and the ZIP signed once signing is set up (below; SignPath e-mails the approver, who confirms the request within the
+workflow's 60-minute wait), creates the release *Enhanced Snap 1.0.0* with the MSI, the ZIP and `SHA256SUMS.txt`, and keeps the MSIX as a
+workflow artifact for the Store. `ci.yml` runs the unit tests on every push and pull request.
 
 Without the workflow: on the repository page, *Releases → Draft a new release*, tag `v1.0.0`, title
 *Enhanced Snap 1.0.0*, notes from the changelog, and attach the MSI, the ZIP and `SHA256SUMS.txt` from
 `artifacts/dist`.
+
+## Code signing (SignPath)
+
+The release workflow can sign the GitHub downloads through SignPath ([code signing](CODE_SIGNING.md)). It signs nothing
+until the values below exist, and until then publishes unsigned releases whose notes say so. The certificate comes
+from SignPath Foundation's free program for open-source projects, which first looks for public adoption (stars, forks,
+contributors, outside articles or discussions; apply at <https://signpath.org/apply> once Enhanced Snap has more of
+them), or from a paid SignPath subscription.
+
+One time, once there is a certificate:
+
+1. Every team member turns on multi-factor authentication for GitHub and SignPath (a SignPath Foundation condition).
+   With the Foundation, `docs/CODE_SIGNING.md` also becomes its code signing policy: the line *Free code signing
+   provided by SignPath.io, certificate by SignPath Foundation*, the team roles (committers and reviewers, approvers)
+   and the privacy statement, linked from the README as *Code signing policy*.
+2. In SignPath: add the predefined trusted build system **GitHub.com** and link it to the project; set the project's
+   repository URL to <https://github.com/VikaKumaChR/EnhancedSnap>; paste
+   [`packaging/signpath-artifact-configuration.xml`](../packaging/signpath-artifact-configuration.xml) as the default
+   artifact configuration; in the signing policy, turn on *Use approval process* (the maintainer approves),
+   *Verify origin* with the allowed branch `main`, and make a CI user its submitter.
+3. Create an API token for the CI user. In the GitHub repository settings, add it as the secret `SIGNPATH_API_TOKEN`,
+   and add the variables `SIGNPATH_ORGANIZATION_ID`, `SIGNPATH_PROJECT_SLUG` and `SIGNPATH_SIGNING_POLICY_SLUG` (shown
+   on the signing policy's page in SignPath). Optional: `SIGNING_PUBLISHER`, the signer name to expect (default
+   *SignPath Foundation*; with a paid subscription, the certificate's name), and `STORE_URL`, another Microsoft Store
+   link for the release notes than the listing they show first.
+   Signing keys and tokens stay with SignPath and in the repository settings, never in the repository.
+
+Still to confirm on the first signed release:
+
+- The workflow runs for a tag, while SignPath's origin check names allowed branches. If SignPath refuses a tag build,
+  run the release from `main` instead (for example a manually started workflow that creates the tag at the end).
+- The artifact configuration nests the MSI and the portable ZIP in the uploaded ZIP; if SignPath refuses that, sign
+  them in two requests.
+- SignPath may refuse a re-run of the same workflow run. If signing fails (a denied request, or no approval within
+  the hour), delete the tag and push it again, which starts a new run, instead of re-running the failed one.
 
 ## Microsoft Store
 

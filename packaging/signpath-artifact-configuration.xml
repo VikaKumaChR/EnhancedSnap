@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath artifact configuration for Enhanced Snap releases (docs/CODE_SIGNING.md).
+
+  SignPath keeps the configuration itself: paste this file into the project's default artifact configuration in
+  SignPath and let its editor validate it. This copy is here so the configuration is reviewed with the code.
+
+  .github/workflows/release.yml uploads one artifact, a ZIP holding EnhancedSnap-<version>-x64.msi and
+  EnhancedSnap-<version>-x64-portable.zip, and passes the version (for example 1.1.0) as the "version" parameter.
+  SignPath signs EnhancedSnap.exe and EnhancedSnap.Settings.exe inside the MSI and inside the portable ZIP, then the
+  MSI itself. Every other file in them is Microsoft's Windows App SDK runtime, already signed by Microsoft.
+  product-name and product-version make SignPath refuse files that aren't this build of Enhanced Snap.
+
+  To confirm on the first signing request (SignPath documents no example of either):
+  - an MSI and a ZIP nested in the uploaded ZIP; if that is refused, sign the MSI and the portable ZIP in two requests;
+  - whether "**/" also matches a file with no folder above it inside the MSI; the EXEs are installed into
+    Programs\Enhanced Snap under the local app data folder.
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <msi-file path="EnhancedSnap-${version}-x64.msi">
+      <pe-file-set product-name="Enhanced Snap" product-version="${version}">
+        <include path="**/EnhancedSnap.exe" />
+        <include path="**/EnhancedSnap.Settings.exe" />
+        <for-each>
+          <authenticode-sign />
+        </for-each>
+      </pe-file-set>
+      <authenticode-sign />
+    </msi-file>
+    <zip-file path="EnhancedSnap-${version}-x64-portable.zip">
+      <pe-file-set product-name="Enhanced Snap" product-version="${version}">
+        <include path="EnhancedSnap.exe" />
+        <include path="EnhancedSnap.Settings.exe" />
+        <for-each>
+          <authenticode-sign />
+        </for-each>
+      </pe-file-set>
+    </zip-file>
+  </zip-file>
+</artifact-configuration>
