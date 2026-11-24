@@ -2,13 +2,11 @@
 
 <h1 align="center">Enhanced Snap</h1>
 
-<p align="center">The Windows Snap replacement for Windows 11: the same gestures, layouts and snap groups,<br>with rounded corners, even spacing and Fluent 2 materials.</p>
+<p align="center">The Windows Snap replacement for Windows 11, with rounded corners and even spacing.</p>
 
-<p align="center"><a href="https://apps.microsoft.com/detail/9p14s84633ll"><b>Get it from the Microsoft Store</b></a> · or from <a href="https://github.com/VikaKumaChR/EnhancedSnap/releases/latest">GitHub Releases</a> (<a href="#download">what to check first</a>)</p>
+<p align="center"><a href="https://apps.microsoft.com/detail/9p14s84633ll?mode=direct"><img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200" alt="Download from the Microsoft Store"></a></p>
 
-<p align="center"><a href="README.zh-TW.md">正體中文</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="docs/USAGE.md">Usage</a> · <a href="docs/ENERGY.md">Energy &amp; rendering</a> · <a href="docs/LIMITATIONS.md">Limitations</a> · <a href="docs/DESIGN.md">Design</a> · <a href="docs/BUILDING.md">Build</a> · <a href="docs/ROADMAP.md">Roadmap</a> · <a href="CHANGELOG.md">Changelog</a> · <a href="PRIVACY.md">Privacy</a> · <a href="docs/CODE_SIGNING.md">Code signing</a></p>
-
-<p align="center"><img src="docs/images/demo-compare.gif" width="800" alt="The top of the seam between two snapped windows, close up. With Windows Snap the corners are square and the windows touch (0 px). With Enhanced Snap the corners stay rounded and there are 8 px between the windows and the screen edge."></p>
+<p align="center"><a href="#install">Install</a> · <a href="#documentation">Documentation</a> · <a href="CHANGELOG.md">Changelog</a> · <a href="README.zh-TW.md">正體中文</a> · <a href="README.zh-CN.md">简体中文</a></p>
 
 ---
 
@@ -21,6 +19,8 @@ room.
 
 Enhanced Snap snaps windows into zones **with Fluent spacing between them, and keeps every window's 8 px
 rounded corners**, using an overlay that follows Windows 11's own materials and motion.
+
+<p align="center"><img src="docs/images/demo-compare.gif" width="800" alt="The top of the seam between two snapped windows, close up. With Windows Snap the corners are square and the windows touch (0 px). With Enhanced Snap the corners stay rounded and there are 8 px between the windows and the screen edge."></p>
 
 ## Replaces Windows Snap
 
@@ -52,24 +52,47 @@ arranged become Enhanced Snap groups.
 - **Live** – change the spacing or a layout and snapped windows re-flow at once; they stay in their zones when the
   resolution, taskbar or monitors change.
 - **Restore on unsnap** – drag a snapped window out and it gets its original size back.
-- **Light** – no timers or polling while idle, about 7 MB of memory ([energy and rendering](docs/ENERGY.md)).
-- **Private** – no telemetry and no network connections ([privacy](PRIVACY.md)).
+- **Light** – no timers or polling while idle, about 7 MB of memory.
+- **Private** – no telemetry and no network connections.
 - **Excluded apps**, **launch at sign-in**, **English / 繁體中文 / 简体中文**.
 
-## Download
+## Install
 
-- **[Microsoft Store](https://apps.microsoft.com/detail/9p14s84633ll)** (recommended): installs and updates through the
-  Store. Microsoft signs the Store package, so Windows shows no SmartScreen warning for it.
+Requires Windows 11 (build 22000 or later), x64.
+
+- **[Microsoft Store](https://apps.microsoft.com/detail/9p14s84633ll?mode=direct)** (recommended): installs and
+  updates through the Store. Microsoft signs the package, so Windows doesn't warn about it.
 - **[GitHub Releases](https://github.com/VikaKumaChR/EnhancedSnap/releases/latest)**: `EnhancedSnap-<version>-x64.msi`
-  (per-user install, no admin prompt) or the portable ZIP. They are not code-signed yet, so Microsoft Edge may say the
-  file *isn't commonly downloaded*, Chrome may call it uncommon, Windows may show *Windows protected your PC* with an
-  unknown publisher, and Smart App Control, if it is on, may block them. That means Windows doesn't know the file yet,
-  not that anything was found in it.
-- **Check a GitHub download before you open it**: in PowerShell, in your Downloads folder, run
-  `Get-FileHash .\EnhancedSnap-<version>-x64.msi`. The hash must match the SHA-256 shown next to the file on the
-  release page and its line in `SHA256SUMS.txt`; if it doesn't, delete the file. If Smart App Control blocks the app,
-  there is no per-app exception: use the Store version.
+  (per-user install, no admin prompt) or the portable ZIP.
 
-## License
+<details>
+<summary>Why Windows may warn about a GitHub download, and how to check one</summary>
 
-[MIT](LICENSE). Enhanced Snap is an independent project and is not affiliated with Microsoft.
+The GitHub downloads are not code-signed yet, so Microsoft Edge may say the file *isn't commonly downloaded*, Chrome
+may call it uncommon, Windows may show *Windows protected your PC* with an unknown publisher, and Smart App Control,
+if it is on, may block the app. That means Windows doesn't know the file yet, not that anything was found in it.
+
+Before you open it, run `Get-FileHash .\EnhancedSnap-<version>-x64.msi` in PowerShell in your Downloads folder. The
+hash must match the SHA-256 shown next to the file on the release page and its line in `SHA256SUMS.txt`; if it
+doesn't, delete the file. Smart App Control has no per-app exception: if it blocks the app, use the Store version.
+More in [code signing](docs/CODE_SIGNING.md).
+
+</details>
+
+## Documentation
+
+- **Using it**: [usage](docs/USAGE.md) (the basics, shortcuts, settings and logs) ·
+  [known limitations](docs/LIMITATIONS.md) · [privacy](PRIVACY.md)
+- **How it works**: [design](docs/DESIGN.md) · [energy and rendering](docs/ENERGY.md) ·
+  [building from source](docs/BUILDING.md) · [code signing](docs/CODE_SIGNING.md)
+- **What's next**: [roadmap](docs/ROADMAP.md) · [changelog](CHANGELOG.md)
+
+## License and contributors
+
+[![License: MIT](https://img.shields.io/github/license/VikaKumaChR/EnhancedSnap)](LICENSE)
+[![Contributors](https://img.shields.io/github/contributors/VikaKumaChR/EnhancedSnap)](https://github.com/VikaKumaChR/EnhancedSnap/graphs/contributors)
+
+Enhanced Snap is open source under the [MIT License](LICENSE); the third-party components in its release builds keep
+their own licenses ([notices](THIRD-PARTY-NOTICES.md)). Issues and pull requests are welcome; everyone who has
+contributed is on the [contributors page](https://github.com/VikaKumaChR/EnhancedSnap/graphs/contributors).
+Enhanced Snap is an independent project and is not affiliated with Microsoft.

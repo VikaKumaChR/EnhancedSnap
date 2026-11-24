@@ -61,7 +61,7 @@ Invoke-Step 'Publish settings app (WinUI 3, NativeAOT, self-contained)' {
 }
 
 Get-ChildItem $publish -Recurse -Include *.pdb | Remove-Item -Force
-Copy-Item "$root\LICENSE" $publish -ErrorAction SilentlyContinue
+Copy-Item "$root\LICENSE", "$root\THIRD-PARTY-NOTICES.md" $publish -ErrorAction SilentlyContinue
 
 $zip = Join-Path $dist "EnhancedSnap-$Version-$arch-portable.zip"
 Invoke-Step 'Portable ZIP' {
