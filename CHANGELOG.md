@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.0 — 2026-11-27
 
 - **Your own layouts in the snap layout menu** (suggestion00): the snap bar that opens when you drag a window to the
   top of the screen and the flyout on the maximize button (and Win + Z) now offer the same sets of layouts, named
