@@ -3,6 +3,7 @@ using EnhancedSnap.Core;
 using EnhancedSnap.Core.Diagnostics;
 using EnhancedSnap.Core.Interop;
 using EnhancedSnap.Core.Localization;
+using EnhancedSnap.Core.Settings;
 using EnhancedSnap.Settings.Pages;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -53,21 +54,77 @@ public sealed partial class MainWindow : Window
             UpdateForScale();
             AppTitleBar.XamlRoot.Changed += (_, _) => UpdateForScale();
         };
-        Nav.Loaded += (_, _) => UpdateContentInset();
-        Nav.DisplayModeChanged += (_, _) => UpdateContentInset();
+        Nav.Loaded += (_, _) =>
+        {
+            UpdateContentInset();
+            ApplySettingsItemText(); // NavigationView creates its Settings item with its template
+        };
+        Nav.DisplayModeChanged += (_, _) =>
+        {
+            UpdateContentInset();
+            ApplySettingsItemText();
+        };
+        Nav.PaneOpened += (_, _) => ApplySettingsItemText();
+        Nav.PaneClosed += (_, _) => ApplySettingsItemText();
         ApplyMinimumSize();
 
         SizeAndCenter();
         ApplyTexts();
+        ApplyTheme();
         App.ViewModel.LanguageChanged += OnLanguageChanged;
-        Closed += (_, _) => App.ViewModel.LanguageChanged -= OnLanguageChanged;
+        App.ViewModel.ThemeChanged += ApplyTheme;
+        Closed += (_, _) =>
+        {
+            App.ViewModel.LanguageChanged -= OnLanguageChanged;
+            App.ViewModel.ThemeChanged -= ApplyTheme;
+        };
         Activated += OnActivated;
         Select(startPage);
     }
 
+    /// <summary>The next Settings navigation opens its About section (--page about, the former About page).</summary>
+    private bool _showAboutNext;
+
+    /// <summary>
+    /// "App appearance": the window's content and its caption buttons follow the chosen theme at once. Snapping overlays
+    /// belong to the engine and keep following Windows, as Windows Snap's do.
+    /// </summary>
+    private void ApplyTheme()
+    {
+        var theme = App.ViewModel.Current.Theme;
+        if (Content is FrameworkElement root)
+        {
+            root.RequestedTheme = theme switch
+            {
+                AppTheme.Light => ElementTheme.Light,
+                AppTheme.Dark => ElementTheme.Dark,
+                _ => ElementTheme.Default,
+            };
+        }
+
+        AppWindow.TitleBar.PreferredTheme = theme switch
+        {
+            AppTheme.Light => TitleBarTheme.Light,
+            AppTheme.Dark => TitleBarTheme.Dark,
+            _ => TitleBarTheme.UseDefaultAppMode,
+        };
+    }
+
+    /// <summary>NavigationView names its Settings item in Windows' language; the app may use another one.</summary>
+    private void ApplySettingsItemText()
+    {
+        if (Nav.SettingsItem is NavigationViewItem settings)
+        {
+            string text = Strings.Current.Nav_Settings;
+            settings.Content = text;
+            ToolTipService.SetToolTip(settings, text);
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(settings, text);
+        }
+    }
+
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _backgroundTimer;
 
-    // AppIcon-<n>.png from tools/make_icons.py: the small sizes are pixel-fitted, so draw the one made for this scale.
+    // AppIcon-<n>.png: the small sizes are drawn for their size, so use the one made for this scale.
     private static readonly int[] TitleIconSizes = [16, 20, 24, 28, 32, 36, 40, 48];
     private double _scale;
 
@@ -161,19 +218,61 @@ public sealed partial class MainWindow : Window
 
     public void Select(SettingsPage page)
     {
+        if (page is SettingsPage.Settings or SettingsPage.About)
+        {
+            _showAboutNext = page == SettingsPage.About;
+            if (Nav.SettingsItem is null)
+            {
+                // Before the NavigationView's template is applied its Settings item doesn't exist yet.
+                RoutedEventHandler? once = null;
+                once = (_, _) =>
+                {
+                    Nav.Loaded -= once;
+                    Select(page);
+                };
+                Nav.Loaded += once;
+                return;
+            }
+
+            if (ContentFrame.Content is AppSettingsPage open && _showAboutNext)
+            {
+                _showAboutNext = false;
+                open.ShowAbout(); // already there: no navigation follows
+            }
+
+            Nav.SelectedItem = Nav.SettingsItem;
+            return;
+        }
+
         Nav.SelectedItem = page switch
         {
             SettingsPage.Layouts => NavLayouts,
             SettingsPage.Appearance => NavAppearance,
             SettingsPage.Keyboard => NavKeyboard,
             SettingsPage.Apps => NavApps,
-            SettingsPage.About => NavAbout,
             _ => NavGeneral,
         };
     }
 
     private void Nav_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
+        if (args.IsSettingsSelected)
+        {
+            bool showAbout = _showAboutNext;
+            _showAboutNext = false;
+            if (ContentFrame.CurrentSourcePageType != typeof(AppSettingsPage))
+            {
+                ContentFrame.Navigate(typeof(AppSettingsPage), showAbout, new EntranceNavigationTransitionInfo());
+                ContentFrame.BackStack.Clear();
+            }
+            else if (showAbout && ContentFrame.Content is AppSettingsPage open)
+            {
+                open.ShowAbout();
+            }
+
+            return;
+        }
+
         if (args.SelectedItem is not NavigationViewItem { Tag: string tag })
         {
             return;
@@ -185,7 +284,6 @@ public sealed partial class MainWindow : Window
             "Appearance" => typeof(AppearancePage),
             "Keyboard" => typeof(KeyboardPage),
             "Apps" => typeof(AppsPage),
-            "About" => typeof(AboutPage),
             _ => typeof(GeneralPage),
         };
 
@@ -216,7 +314,7 @@ public sealed partial class MainWindow : Window
         NavAppearance.Content = s.Nav_Appearance;
         NavKeyboard.Content = s.Nav_Keyboard;
         NavApps.Content = s.Nav_Apps;
-        NavAbout.Content = s.Nav_About;
+        ApplySettingsItemText();
     }
 
     private void SizeAndCenter()

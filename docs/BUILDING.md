@@ -13,7 +13,6 @@
 ./build.ps1                    # tests → NativeAOT publish → artifacts/dist/*.zip, *.msi, SHA256SUMS.txt (GitHub)
                                #   and artifacts/store/*.msix (Microsoft Store upload)
 ./build.ps1 -Version 1.0.1     # default: <Version> in Directory.Build.props
-python tools/make_icons.py     # re-render every icon asset from the one design (Pillow, NumPy)
 ```
 
 Releasing to GitHub and the Microsoft Store: [PUBLISHING.md](PUBLISHING.md).

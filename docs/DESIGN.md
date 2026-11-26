@@ -28,6 +28,7 @@ uses Fluent 2 materials and motion.
 | Theme | Zones follow the *Windows* mode (shell chrome); settings follow the app mode | `SystemState` |
 | Typography/controls | WinUI 3 defaults (Segoe UI Variable, `SettingsCard`, NavigationView) | Settings app |
 | Page layout | The Content Layer keeps equal space left and right at every width: 40 epx, 24 epx below 640 epx; content stretches between (Suggestion02). In NavigationView's minimal mode (windows under 640 epx) the pane button floats over the content's top-left corner, so the pages start below it | `PageContentPanel`, `MainWindow` |
+| Settings page | NavigationView's own Settings item, last and pinned to the bottom ([app settings guidelines](https://learn.microsoft.com/windows/apps/design/app-settings/guidelines-for-app-settings)). *App appearance* holds Theme (system, light or dark: the settings window and its caption buttons; snapping overlays follow Windows, as Windows Snap's do) and Language. *About* holds Send feedback, the file shortcuts and Quit, then the About `SettingsExpander` last: icon, name and version in its header; license, notices, privacy and repository inside (Suggestion03) | `AppSettingsPage`, `MainWindow.ApplyTheme` |
 | Desktop previews | The user's wallpaper, fitted like Windows (fill, fit, stretch, center, span, tile at the picture's own scale; EXIF-upright), in a frame with the monitor's shape, clipped to 7 epx inside the 8 epx frame. Decoded off the UI thread at about 1280 px (the preview's size; rounding the shown part out to whole pixels can add 2) and only the shown part, turned photos too: the shown rectangle is mapped back into the stored frame, decoded alone, then turned upright; a file that can't be decoded right now gives way to Windows' own copy (`TranscodedWallpaper`). The log gives the kind (picture with its extension, or solid color), fit, monitor and decoded size, never the file name. Windows and taskbar are Mica: a 48 px whole-desktop backdrop drawn stretched (the blur) under a tint (windows 80 % light / 84 % dark, the taskbar 84 % in either Windows mode), opaque under the fallbacks below. The windows follow the app mode; the taskbar follows the Windows mode, like the real one (Suggestion01_01/02) | `LayoutPreview`, `WallpaperPreview`, `WallpaperLayout` |
 | Pop down sets | The snap layout menu's sets as tabs below its cards, like WinUI's `SelectorBar`: 40 epx tall (touch target) and as wide as the name, measured with DirectWrite, plus 12 epx each side (at least 64), 12 epx text (the active one semibold, the others `TextFillColorSecondary`), `SubtleFillColorSecondary` under the pointer (an outline in high contrast), a 16 × 3 epx accent bar under the active tab that glides 150 ms; new cards fade in over 167 ms, nothing moves without animations (suggestion00) | `LayoutFlyout`, `SnapBarCatalog` |
 
@@ -360,31 +361,26 @@ needs it), so the two never show at once.
 
 ## 8. Product icon
 
-One design, rendered by `tools/make_icons.py` into every asset (`assets/` for the executables, tray, MSI and settings
-app; `packaging/Images/` for the MSIX), to Windows 11's app-icon guidelines:
+The icon is designed outside this repository and exported as one complete set: `assets/` for the executables, tray,
+MSI and settings app, and `packaging/Images/` for the MSIX. Nothing in the build renders icons. To change the icon,
+replace those files with a new export under the same names.
 
 ![The icon on the light and dark themes, at 16 to 64 px and as the paused tray icon](images/icon.png)
 
-- **Metaphor**: a window with a dark-blue title bar (the WinUI Gallery icon's) and a cyan window snapped in front of it,
-  flush with the left and bottom edges: two layers, one idea. It keeps the demo icon's stagger, with its top ribbon
-  turned into the title bar.
-- **Grid**: 48 px, live area 2–46. Back window 2,2–46,33 with a 7 px title bar; front window 2,22–34,46; exterior
-  corners 2 px.
-- **Colour**: the cyan blue of Windows' own utilities (WinUI Gallery, Quick Assist, Live captions), one 120° gradient
-  per layer, light at the top left: title `#0A6FD2 → #0B4E9C`, body `#1290E6 → #0A6CC8`, front `#5EDCFF → #22B2F0`.
-  57 % of the icon has 3:1 contrast against the light theme and 84 % against the dark theme; the script fails below
-  50 %.
-- **Depth**: the front window casts the two-part "separate metaphor" shadow (0 px offset / 2 px blur at 20 %,
-  2 px / 4 px at 22 %), masked into the window below. Nothing falls on the background, which stays transparent
-  (unplated).
-- **Small sizes**: below 48 px every edge snaps to the pixel grid, the title bar keeps at least 2 px, and the shadow
-  becomes a one-pixel gap around the front window. The ICO has frames from 16 to 256 px for every DPI; the settings
-  title bar loads the PNG made for its display scale (16–48 px); the paused tray icon is the same art in Fluent
-  neutrals.
-- **Store**: `Square44x44Logo` at target sizes 16–256. The `altform-unplated` and `altform-lightunplated` variants
-  (taskbar, Start) are the art itself. The plain variant is what lists such as *Settings → Apps → Startup* draw on a
-  plate in the user's accent colour, so it keeps the art at two thirds of the plate; edge to edge, the plate would only
-  show in the art's open corner and look like a mistake. Tiles, Store logo and splash screen at scales 100–400.
+- **Metaphor**: two snapped windows, a dark-blue one and a cyan one, each with its title bar. Between them, on a light
+  backplate, is the snap divider as an I-beam handle. It shows what Enhanced Snap adds, the gap and the divider
+  between snapped windows, in the style of Windows 11's own utility icons (WinUI Gallery, Quick Assist).
+- **Small sizes**: 16 to 64 px are drawn for their size rather than scaled, so the divider still reads at 16 px.
+  - The ICO has frames from 16 to 256 px.
+  - The settings title bar loads the PNG made for its display scale (16–48 px).
+  - The paused tray icon is the same art in neutrals.
+- **Store**: `Square44x44Logo` comes at target sizes 16–256.
+  - The `altform-unplated` and `altform-lightunplated` variants (taskbar, Start) are the art itself, about 92 % of the
+    canvas.
+  - The plain variant is what lists such as *Settings → Apps → Startup* draw on a plate in the user's accent colour,
+    so it keeps the art at about 60 % of the plate.
+  - Tiles, Store logo and splash screen come at scales 100–400. The manifest's `MedTile` and `WideTile` are the
+    export's `Square150x150Logo` and `Wide310x150Logo`.
 
 ## 9. Distribution
 

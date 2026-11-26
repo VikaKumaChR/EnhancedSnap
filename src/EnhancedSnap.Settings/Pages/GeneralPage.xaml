@@ -107,14 +107,32 @@
                 IsClosable="True"
                 Message="{x:Bind S.Admin_Failed}"
                 Severity="Warning" />
-            <toolkit:SettingsCard x:Name="AdminCard" Description="{x:Bind S.Setting_RunAsAdminDesc}" Header="{x:Bind S.Setting_RunAsAdmin}">
+            <!-- The switch is only a setting: shown when it is on but the engine has no administrator rights (T2). -->
+            <InfoBar
+                x:Name="AdminRepairBar"
+                IsClosable="False"
+                Message="{x:Bind S.Admin_Repair}"
+                Severity="Warning">
+                <InfoBar.ActionButton>
+                    <Button x:Name="AdminRepairButton" Click="AdminRepair_Click" Content="{x:Bind S.Action_Repair}" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+            <toolkit:SettingsCard x:Name="AdminCard" Description="{x:Bind AdminDescription}" Header="{x:Bind S.Setting_RunAsAdmin}">
                 <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE7EF;" /></toolkit:SettingsCard.HeaderIcon>
-                <ToggleSwitch
-                    x:Name="AdminSwitch"
-                    IsOn="{x:Bind Vm.RunAsAdministrator, Mode=OneWay}"
-                    OffContent="{x:Bind S.Toggle_Off}"
-                    OnContent="{x:Bind S.Toggle_On}"
-                    Toggled="AdminSwitch_Toggled" />
+                <Grid>
+                    <ToggleSwitch
+                        x:Name="AdminSwitch"
+                        IsOn="{x:Bind Vm.RunAsAdministrator, Mode=OneWay}"
+                        OffContent="{x:Bind S.Toggle_Off}"
+                        OnContent="{x:Bind S.Toggle_On}"
+                        Toggled="AdminSwitch_Toggled" />
+                    <!-- Store version: no administrator mode; says so and points to the GitHub version (T3). -->
+                    <HyperlinkButton
+                        x:Name="AdminStoreLink"
+                        Click="GetGitHubVersion_Click"
+                        Content="{x:Bind S.Action_GetGitHubVersion}"
+                        Visibility="Collapsed" />
+                </Grid>
             </toolkit:SettingsCard>
 
             <TextBlock Style="{StaticResource SectionHeaderTextBlockStyle}" Text="{x:Bind S.Section_Behavior}" />
@@ -159,15 +177,6 @@
             <toolkit:SettingsCard Description="{x:Bind S.Setting_StartupDesc}" Header="{x:Bind S.Setting_Startup}">
                 <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE748;" /></toolkit:SettingsCard.HeaderIcon>
                 <ToggleSwitch x:Name="StartupSwitch" IsOn="{x:Bind Vm.LaunchAtStartup, Mode=TwoWay}" OffContent="{x:Bind S.Toggle_Off}" OnContent="{x:Bind S.Toggle_On}" />
-            </toolkit:SettingsCard>
-            <toolkit:SettingsCard Description="{x:Bind S.Setting_LanguageDesc}" Header="{x:Bind S.Setting_Language}">
-                <toolkit:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE775;" /></toolkit:SettingsCard.HeaderIcon>
-                <ComboBox MinWidth="240" SelectedIndex="{x:Bind Vm.LanguageIndex, Mode=TwoWay}">
-                    <ComboBoxItem Content="{x:Bind S.Language_System}" />
-                    <ComboBoxItem Content="English" />
-                    <ComboBoxItem Content="繁體中文" />
-                    <ComboBoxItem Content="简体中文" />
-                </ComboBox>
             </toolkit:SettingsCard>
         </StackPanel>
         </controls:PageContentPanel>

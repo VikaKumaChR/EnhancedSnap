@@ -20,7 +20,9 @@ Two channels, one build (`./build.ps1`):
 
 1. Set `<Version>` and add the `## <version> — <date>` section to `CHANGELOG.md` (the GitHub release notes are taken
    from it).
-2. Icon changed? Run `python tools/make_icons.py` (it checks the 3:1 contrast rule and fails below 50 %).
+2. Icon changed? Replace `assets/` and `packaging/Images/` with the new export under the same names
+   ([DESIGN.md §8](DESIGN.md#8-product-icon)). Then check the 16 px sizes on the light and dark themes, and upload the
+   Store listing art in Partner Center.
 3. `./build.ps1` — unit tests, NativeAOT publish, ZIP, MSI, MSIX.
 4. Smoke-test the MSI on a Windows 11 PC: install over the previous version, drag to the edges and corners, the
    layouts flyout (maximize button and Win + Z), Snap Assist, a snap group in the taskbar preview, Alt + Tab and Task
@@ -116,9 +118,12 @@ its registry and AppData writes are private to it, so (see `AppInfo.IsPackaged`)
   it back on; the app then says where.
 - **Replace Windows Snap** changes the *Snap windows* switch for the current sign-in only (no `SPIF_UPDATEINIFILE`):
   removing the app while it runs can't leave Snap off past the next sign-in.
-- **Snap apps running as administrator** is hidden: it needs a scheduled task that starts the engine elevated, outside
-  the package.
-- Settings and logs live in the package's `LocalCache`; *About → Open settings folder* opens that folder.
+- **Snap apps running as administrator** isn't available: it needs a scheduled task that starts the engine elevated,
+  outside the package. The General page shows the option without a switch: it says why and links to the GitHub
+  version.
+  - The restricted capabilities that could change this, `uiAccess` and `allowElevation`, need Microsoft's approval in
+    the submission that first declares them. None is declared.
+- Settings and logs live in the package's `LocalCache`; *Settings → About → Open settings folder* opens that folder.
 - The self-contained Windows App SDK classes are registered in the package manifest (generated from the settings
   app's side-by-side manifest by `packaging/build-msix.ps1`); `resources.pri` merges the logos with the settings app's
   own index.

@@ -7,7 +7,8 @@ using Microsoft.UI.Xaml;
 namespace EnhancedSnap.Settings;
 
 /// <summary>
-/// EnhancedSnap.Settings.exe [--page general|layouts|appearance|keyboard|apps|about] [--welcome]
+/// EnhancedSnap.Settings.exe [--page general|layouts|appearance|keyboard|apps|settings|about] [--welcome]
+/// (about opens Settings with its About section expanded)
 /// Single instance: a second launch forwards its page to the first and exits.
 /// </summary>
 public static class Program

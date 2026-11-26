@@ -136,7 +136,7 @@ public sealed partial class Strings
     public string Nav_Appearance => Get();
     public string Nav_Keyboard => Get();
     public string Nav_Apps => Get();
-    public string Nav_About => Get();
+    public string Nav_Settings => Get();
 
     // ---- Status
     public string Status_Running => Get();
@@ -304,6 +304,27 @@ public sealed partial class Strings
     public string About_RoadmapBody => Get();
     public string About_Quit => Get();
 
+    // ---- Settings page (app appearance, language, about)
+    public string Settings_Desc => Get();
+    public string Section_AppAppearance => Get();
+    public string Setting_Theme => Get();
+    public string Setting_ThemeDesc => Get();
+    public string Theme_System => Get();
+    public string Theme_Light => Get();
+    public string Theme_Dark => Get();
+    public string Section_About => Get();
+    public string Feedback_Title => Get();
+    public string Feedback_Desc => Get();
+    public string About_Copyright => Get();
+    public string About_License => Get();
+    public string About_LicenseDesc => Get();
+    public string About_ThirdParty => Get();
+    public string About_ThirdPartyDesc => Get();
+    public string About_Privacy => Get();
+    public string About_PrivacyDesc => Get();
+    public string About_Repo => Get();
+    public string About_RepoDesc => Get();
+
     // ---- Snap groups, flyouts, Snap Assist
     public string Groups_Join => Get();
     public string Group_TaskbarTitle => Get();
@@ -332,6 +353,10 @@ public sealed partial class Strings
     public string Setting_RunAsAdmin => Get();
     public string Setting_RunAsAdminDesc => Get();
     public string Admin_Failed => Get();
+    public string Admin_Repair => Get();
+    public string Action_Repair => Get();
+    public string Admin_StoreDesc => Get();
+    public string Action_GetGitHubVersion => Get();
     public string Shortcut_WinZ => Get();
     public string Shortcut_EdgeDrag => Get();
     public string Shortcut_Divider => Get();
@@ -351,5 +376,8 @@ public sealed partial class Strings
     public string Notify_ElevatedTitle => Get();
     public string Notify_ElevatedBody => Get();
     public string Notify_ElevatedBodyPackaged => Get();
+    public string Notify_ElevatedBodyRepair => Get();
+    public string Notify_AdminOffTitle => Get();
+    public string Notify_AdminOffBody => Get();
     public string Notify_UnsupportedOs => Get();
 }

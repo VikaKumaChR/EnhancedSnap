@@ -24,7 +24,7 @@
             x:Name="Nav"
             Grid.Row="1"
             IsBackButtonVisible="Collapsed"
-            IsSettingsVisible="False"
+            IsSettingsVisible="True"
             IsPaneToggleButtonVisible="True"
             PaneDisplayMode="Auto"
             OpenPaneLength="264"
@@ -48,11 +48,8 @@
                     <NavigationViewItem.Icon><FontIcon Glyph="&#xE71D;" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
-            <NavigationView.FooterMenuItems>
-                <NavigationViewItem x:Name="NavAbout" Tag="About">
-                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE946;" /></NavigationViewItem.Icon>
-                </NavigationViewItem>
-            </NavigationView.FooterMenuItems>
+            <!-- Settings (app appearance, language, about) is NavigationView's own item, last and pinned to the bottom
+                 (learn.microsoft.com/windows/apps/design/app-settings/guidelines-for-app-settings). -->
 
             <Frame x:Name="ContentFrame" />
         </NavigationView>

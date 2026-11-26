@@ -55,6 +55,27 @@
   left and right edges at any window size, like the WinUI 3 Gallery, instead of leaving a wide gap on the right of
   large windows. In a narrow window, where the navigation button floats over the page, the page starts below it.
 - **Screen readers and voice access can press *Open settings folder* and *Open logs*** in Settings → About.
+- **A new icon**: two snapped windows with the snap divider between them, drawn for every size from 16 px. It is the
+  same everywhere: the programs, the tray (and its paused version), the settings window, the installer, the Start
+  menu, the taskbar and the Microsoft Store package.
+- **"Snap apps running as administrator" says when it isn't working.** The switch could stay on while Enhanced Snap ran
+  without administrator rights: an uninstall removes the scheduled task behind it but keeps your settings (the
+  development previews' uninstall did that too). The windows of apps running as administrator then didn't move, and
+  nothing said why.
+  - Every start now checks that an elevated Enhanced Snap really started. If not, it runs without those rights and
+    says so in a notification. Selecting it opens Settings → General, where a **Repair** button asks Windows once more.
+  - It no longer starts another copy of Enhanced Snap that the task still points to, for example in a moved ZIP
+    folder.
+- **Microsoft Store version**: the administrator option now shows on the General page, explaining that it isn't
+  available there. It links to the GitHub version, which has it, as do the Apps page and the notification about an
+  elevated window.
+- **Settings**, at the bottom of the navigation, as in Windows' own apps:
+  - **App appearance**: a new **Theme** (use system setting, light or dark) for the settings window, applied at once,
+    and **Language**, moved from General.
+  - **About**, which used to be a page of its own: **Send feedback**, *Open logs*, *Open settings folder* and *Quit*,
+    then an About section with the icon, version, license, third-party notices, privacy and the GitHub repository.
+- **Send feedback** opens a GitHub issue form with Enhanced Snap's version, where it was installed from and the
+  Windows build filled in, and nothing else. You need a GitHub account, and nothing is sent until you submit it.
 
 ## 1.0.1 — 2026-11-05
 

@@ -69,7 +69,11 @@
                 IsOpen="True"
                 Message="{x:Bind AdminBody}"
                 Severity="Informational"
-                Title="{x:Bind S.Apps_AdminTitle}" />
+                Title="{x:Bind S.Apps_AdminTitle}">
+                <InfoBar.ActionButton>
+                    <HyperlinkButton Click="GetGitHubVersion_Click" Content="{x:Bind S.Action_GetGitHubVersion}" Visibility="{x:Bind StoreLinkVisibility}" />
+                </InfoBar.ActionButton>
+            </InfoBar>
         </StackPanel>
         </controls:PageContentPanel>
     </ScrollViewer>

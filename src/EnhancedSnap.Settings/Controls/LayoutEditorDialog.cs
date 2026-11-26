@@ -154,6 +154,7 @@ internal static class LayoutEditorDialog
         var dialog = new ContentDialog
         {
             XamlRoot = root,
+            RequestedTheme = (root.Content as FrameworkElement)?.RequestedTheme ?? ElementTheme.Default, // the app theme (dialogs sit outside the page)
             Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
             Title = s.Editor_Title,
             Content = new ScrollViewer { Content = content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },

@@ -7,6 +7,8 @@ Enhanced Snap 做不到或與 Windows 貼齊不同的地方，以及原因。
 - **以系統管理員身分執行的應用程式**：這類視窗（系統管理員終端機、工作管理員）只有提升權限的程序才能移動。
   開啟「貼齊以系統管理員身分執行的應用程式」：Windows 只詢問一次，之後由排程工作以系統管理員權限啟動 Enhanced Snap（登入時也是）。
   您的帳戶需為系統管理員，且需使用安裝程式或免安裝版：Microsoft Store 版無法以系統管理員權限啟動，因此不會移動這些視窗。
+  - 若開關已開啟，Enhanced Snap 卻沒有以系統管理員權限執行（例如解除安裝移除了排程工作，或免安裝版資料夾搬移過），
+    Enhanced Snap 會以通知告知，並在「一般」頁面顯示「修復」按鈕。
 - **Windows 設定中的「貼齊視窗」顯示為關閉**：開啟「取代 Windows 貼齊」時，Enhanced Snap 執行期間這個開關會顯示為**關閉**——這就是接手；
   暫停或結束 Enhanced Snap 會自動重新開啟。若程式被強制結束導致仍為關閉，啟動一次 Enhanced Snap（或執行 `EnhancedSnap.exe --restore-snap`）即可還原。
   Microsoft Store 版不會把這項變更寫入您的設定檔，因此登出也會還原 Windows 貼齊。

@@ -17,7 +17,11 @@ public sealed partial class GeneralPage : Page
     {
         InitializeComponent();
         WelcomeBar.IsOpen = App.ShowWelcome;
-        AdminCard.Visibility = AppInfo.IsPackaged ? Visibility.Collapsed : Visibility.Visible; // a scheduled task outside the package
+
+        // Store version: no administrator mode (its scheduled task would run the engine outside the package). The card
+        // stays, says so, and links to the GitHub version instead of a switch.
+        AdminSwitch.Visibility = AppInfo.IsPackaged ? Visibility.Collapsed : Visibility.Visible;
+        AdminStoreLink.Visibility = AppInfo.IsPackaged ? Visibility.Visible : Visibility.Collapsed;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
     }
@@ -25,6 +29,8 @@ public sealed partial class GeneralPage : Page
     public Strings S { get; } = Strings.Current;
 
     public SettingsViewModel Vm => App.ViewModel;
+
+    public string AdminDescription => AppInfo.IsPackaged ? S.Admin_StoreDesc : S.Setting_RunAsAdminDesc;
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
@@ -36,6 +42,7 @@ public sealed partial class GeneralPage : Page
 
         RefreshStatus();
         RefreshHero();
+        RefreshAdminStatus();
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -57,6 +64,7 @@ public sealed partial class GeneralPage : Page
             bool startup = Vm.LaunchAtStartup;
             StartupSwitch.IsOn = startup;
             StartupBlockedBar.IsOpen &= !startup;
+            RefreshAdminStatus();
         }
     }
 
@@ -162,8 +170,67 @@ public sealed partial class GeneralPage : Page
             AdminSwitch.IsEnabled = true;
             _adminBusy = false;
             RefreshStatus();
+            RefreshAdminStatus();
         }
     }
+
+    /// <summary>
+    /// Administrator mode is on: is it working? The running engine must be elevated; with no engine running, its
+    /// scheduled task must at least exist. Checked off the UI thread (schtasks), on load and when the window comes back.
+    /// </summary>
+    private async void RefreshAdminStatus()
+    {
+        if (AppInfo.IsPackaged || !Vm.RunAsAdministrator || _adminBusy)
+        {
+            AdminRepairBar.IsOpen = false;
+            return;
+        }
+
+        bool broken = await Task.Run(() =>
+        {
+            int engine = AdminMode.EngineProcessId();
+            return engine != 0 ? AdminMode.IsElevated(engine) == false : !AdminMode.TaskExists();
+        });
+        AdminRepairBar.IsOpen = broken && Vm.RunAsAdministrator && !_adminBusy;
+    }
+
+    /// <summary>Repair = turn administrator mode on again: one UAC prompt registers the task and restarts the engine.</summary>
+    private async void AdminRepair_Click(object sender, RoutedEventArgs e)
+    {
+        if (_adminBusy)
+        {
+            return;
+        }
+
+        _adminBusy = true;
+        AdminRepairButton.IsEnabled = false;
+        AdminBar.IsOpen = false;
+        try
+        {
+            if (await EngineClient.EnableElevationAsync())
+            {
+                // The elevated engine takes a moment to show its window.
+                for (int i = 0; i < 20 && AdminMode.IsElevated(AdminMode.EngineProcessId()) != true; i++)
+                {
+                    await Task.Delay(150);
+                }
+            }
+            else
+            {
+                AdminBar.IsOpen = true;
+            }
+        }
+        finally
+        {
+            AdminRepairButton.IsEnabled = true;
+            _adminBusy = false;
+            RefreshStatus();
+            RefreshAdminStatus();
+        }
+    }
+
+    private async void GetGitHubVersion_Click(object sender, RoutedEventArgs e) =>
+        await Windows.System.Launcher.LaunchUriAsync(new Uri(AppInfo.ReleasesUrl));
 
     private void WelcomeBar_Closed(InfoBar sender, InfoBarClosedEventArgs args) => Vm.WelcomeDismissed = true;
 }

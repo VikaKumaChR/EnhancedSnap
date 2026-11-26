@@ -5,6 +5,7 @@ using System.Text;
 using EnhancedSnap.Core;
 using EnhancedSnap.Core.Diagnostics;
 using EnhancedSnap.Core.Interop;
+using EnhancedSnap.Core.Platform;
 using EnhancedSnap.Engine.Native;
 using static EnhancedSnap.Engine.Native.NativeMethods;
 
@@ -23,7 +24,7 @@ internal static unsafe class Elevation
 {
     public static bool IsElevated { get; } = Environment.IsPrivilegedProcess;
 
-    private static string TaskName => $"Enhanced Snap (administrator) - {Environment.UserName}";
+    private static string TaskName => AdminMode.TaskName;
 
     private static string CurrentUser => $@"{Environment.UserDomainName}\{Environment.UserName}";
 
@@ -89,10 +90,71 @@ internal static unsafe class Elevation
 
     public static bool RunTask() => Schtasks("/run", "/tn", TaskName) == 0;
 
-    public static bool TaskExists() => Schtasks("/query", "/tn", TaskName) == 0;
+    public static bool TaskExists() => AdminMode.TaskExists();
 
     /// <summary>Best effort: needs administrator rights when the task was registered elevated.</summary>
     public static bool UnregisterTask() => TaskExists() && Schtasks("/delete", "/tn", TaskName, "/f") == 0;
+
+    /// <summary>
+    /// An unelevated start with administrator mode on: run the task, then wait for what it was meant to start, an
+    /// elevated engine of this same executable. False (with the reason) when that didn't happen: no task (an uninstall
+    /// removed it), a task that ran nothing, or a copy elsewhere (a moved ZIP folder), which is closed again. The caller
+    /// then carries on without administrator rights, and the engine says so.
+    /// </summary>
+    public static bool HandOver(out string problem)
+    {
+        if (!TaskExists())
+        {
+            problem = "its scheduled task is missing";
+            return false;
+        }
+
+        if (!RunTask())
+        {
+            problem = "its scheduled task did not run";
+            return false;
+        }
+
+        long deadline = Environment.TickCount64 + 15_000; // a busy sign-in can take a while
+        while (Environment.TickCount64 < deadline)
+        {
+            int pid = AdminMode.EngineProcessId();
+            if (pid != 0)
+            {
+                string? path = AdminMode.ImagePath(pid);
+                if (path is not null && !AdminMode.IsThisEngine(path))
+                {
+                    // Don't leave another copy running with administrator rights: the user started this one. (A path
+                    // that can't be read proves nothing, and closing the right engine would break administrator mode.)
+                    Win32.PostMessage(Win32.FindWindow(AppInfo.EngineWindowClass, null), WM_CLOSE, 0, 0);
+                    WaitForExit(pid);
+                    problem = $"its scheduled task started another copy ({path})";
+                    return false;
+                }
+
+                problem = "";
+                return true; // if Windows gave it no administrator rights, that engine says so itself
+            }
+
+            Thread.Sleep(100);
+        }
+
+        problem = "its scheduled task ran, but no engine started";
+        return false;
+    }
+
+    private static void WaitForExit(int pid)
+    {
+        try
+        {
+            using var process = Process.GetProcessById(pid);
+            process.WaitForExit(5000);
+        }
+        catch (ArgumentException)
+        {
+            // already gone
+        }
+    }
 
     /// <summary>The account the elevated helper must run as: over-the-shoulder elevation (another account) can't work.</summary>
     public static bool IsSameUser(string? expected) =>
@@ -172,37 +234,5 @@ internal static unsafe class Elevation
         }
     }
 
-    private static int Schtasks(params string[] arguments)
-    {
-        try
-        {
-            var start = new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "schtasks.exe"))
-            {
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            };
-            foreach (string argument in arguments)
-            {
-                start.ArgumentList.Add(argument);
-            }
-
-            using var process = Process.Start(start)!;
-            process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            process.WaitForExit(15000);
-            if (process.ExitCode != 0 && !string.IsNullOrWhiteSpace(error) && arguments[0] != "/query")
-            {
-                Log.Warn($"schtasks {arguments[0]}: {error.Trim()}");
-            }
-
-            return process.ExitCode;
-        }
-        catch (Exception ex)
-        {
-            Log.Warn($"schtasks failed: {ex.Message}");
-            return -1;
-        }
-    }
+    private static int Schtasks(params string[] arguments) => AdminMode.RunSchtasks(arguments);
 }

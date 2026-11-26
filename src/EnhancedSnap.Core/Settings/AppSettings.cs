@@ -4,6 +4,14 @@ using EnhancedSnap.Core.Layouts;
 namespace EnhancedSnap.Core.Settings;
 
 /// <summary>How the zones overlay is triggered while a window is being dragged.</summary>
+/// <summary>Theme of the settings window: follow Windows (default), or always light or dark.</summary>
+public enum AppTheme
+{
+    System,
+    Light,
+    Dark,
+}
+
 public enum ActivationMode
 {
     /// <summary>Zones appear only while Shift is held (FancyZones default, never fights Windows Snap).</summary>
@@ -168,6 +176,12 @@ public sealed class AppSettings
 
     /// <summary>UI language tag ("en", "zh-Hant", "zh-Hans") or empty to follow Windows.</summary>
     public string Language { get; set; } = "";
+
+    /// <summary>
+    /// Light or dark for the settings window ("App appearance"). Snapping overlays keep following Windows, as Windows
+    /// Snap's do. Missing in older settings files, which then follow Windows too.
+    /// </summary>
+    public AppTheme Theme { get; set; } = AppTheme.System;
 
     /// <summary>Process names (or fragments) that are never snapped. "notepad" matches notepad.exe and notepad++.exe;
     /// "notepad.exe" matches only notepad.exe.</summary>

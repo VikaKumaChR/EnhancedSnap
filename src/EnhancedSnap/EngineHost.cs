@@ -84,6 +84,14 @@ internal sealed unsafe class EngineHost : IDisposable
         EfficiencyMode.EnableForProcess();
         Log.Info($"Engine ready (replace Windows Snap={WindowsSnapOverride.IsApplied}, administrator={Elevation.IsElevated}, energy saver={_system.EnergySaverActive}, transparency={_system.TransparencyEnabled}, animations={_system.AnimationsEnabled})");
 
+        // "Snap apps running as administrator" is on but this engine has no administrator rights (Program logged why):
+        // say so once, instead of leaving the switch on with nothing behind it. Selecting it opens Settings → General.
+        if (AdminModeBroken)
+        {
+            var s = Strings.Current;
+            _tray?.ShowNotification(s.Notify_AdminOffTitle, s.Notify_AdminOffBody);
+        }
+
         if (openPage is { } page)
         {
             LaunchSettings(page, welcome);
@@ -371,6 +379,7 @@ internal sealed unsafe class EngineHost : IDisposable
         {
             case NIN_SELECT:
             case NIN_KEYSELECT:
+            case NIN_BALLOONUSERCLICK: // the notifications point to Settings → General (administrator mode)
                 LaunchSettings(SettingsPage.General);
                 break;
             case WM_CONTEXTMENU:
@@ -502,7 +511,13 @@ internal sealed unsafe class EngineHost : IDisposable
     private void OnElevatedWindow(string processName)
     {
         var s = Strings.Current;
-        string body = AppInfo.IsPackaged ? s.Notify_ElevatedBodyPackaged : s.Notify_ElevatedBody; // no administrator mode in the Store package
+        string body = AppInfo.IsPackaged ? s.Notify_ElevatedBodyPackaged // no administrator mode in the Store package
+            : AdminModeBroken ? s.Notify_ElevatedBodyRepair
+            : s.Notify_ElevatedBody;
         _tray?.ShowNotification(s.Notify_ElevatedTitle, s.Format(body, processName));
     }
+
+    /// <summary>Administrator mode is on, yet this engine runs without administrator rights (installer and ZIP versions).</summary>
+    private bool AdminModeBroken =>
+        _settings.RunAsAdministrator && !Elevation.IsElevated && !AppInfo.IsPackaged && WindowRules.TestWindowTitle is null;
 }

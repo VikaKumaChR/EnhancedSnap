@@ -8,6 +8,9 @@ Where Enhanced Snap stops short of Windows Snap or works differently, and why.
   process. Turn on *Snap apps running as administrator*: Windows asks once, then a scheduled task starts Enhanced Snap
   elevated (at sign-in too). This needs your account to be an administrator, and the installer or ZIP version: the
   Microsoft Store version can't start itself elevated, so it leaves those windows alone.
+  - If the switch is on but Enhanced Snap runs without administrator rights, it says so in a notification and on the
+    General page, with a **Repair** button. That happens when an uninstall removed the scheduled task, or the ZIP
+    folder moved.
 - **Windows Settings shows "Snap windows" off.** With *Replace Windows Snap* on, the switch shows **Off** while
   Enhanced Snap runs — that is the takeover. Quitting or pausing Enhanced Snap switches it back on. If a run was killed
   and the switch stayed off, start Enhanced Snap once (or run `EnhancedSnap.exe --restore-snap`). The Microsoft Store

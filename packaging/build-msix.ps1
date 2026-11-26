@@ -4,7 +4,7 @@
 
 .DESCRIPTION
   Package layout = the publish folder
-                 + Images\            the logos (packaging/Images, made by tools/make_icons.py)
+                 + Images\            the logos (packaging/Images, the exported icon set)
                  + AppxManifest.xml   packaging/AppxManifest.xml with the identity from packaging/store-identity.json
                                       and the Windows App SDK classes the settings app activates
                  + resources.pri      the logos' scale / target-size / theme variants, merged with the settings

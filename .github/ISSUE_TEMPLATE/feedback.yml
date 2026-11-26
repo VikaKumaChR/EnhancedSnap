@@ -1,0 +1,58 @@
+# Opened by Enhanced Snap's Settings → About → Send feedback, which fills in the version, edition and windows fields
+# through the URL (src/EnhancedSnap.Core/Platform/Feedback.cs). Keep those three ids.
+name: Feedback
+description: Report a problem or suggest an idea. English or Chinese is fine (中文也可以).
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping make Enhanced Snap better. This issue is public: please leave out names, e-mail addresses and
+        paths that contain your user name.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is it about?
+      options:
+        - Something doesn't work
+        - An idea or a suggestion
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened, or what would you like?
+      description: For a problem, what you did, what you expected and what happened instead. A screenshot helps.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce (for a problem)
+      placeholder: |
+        1.
+        2.
+        3.
+  - type: input
+    id: version
+    attributes:
+      label: Enhanced Snap version
+      description: Filled in when you open this from Settings → About → Send feedback.
+  - type: input
+    id: edition
+    attributes:
+      label: Installed from
+      description: Microsoft Store, installer (MSI) or ZIP.
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: For example 10.0.26300.7171 (Settings → System → About).
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs (optional)
+      description: >-
+        Settings → About → Open logs. The logs list app names, window sizes and display names; remove anything you'd
+        rather not share.
+      render: text

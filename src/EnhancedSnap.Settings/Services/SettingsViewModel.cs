@@ -31,6 +31,9 @@ public sealed partial class SettingsViewModel : INotifyPropertyChanged
     /// <summary>Raised after the UI language changed so the shell can rebuild its text.</summary>
     public event Action? LanguageChanged;
 
+    /// <summary>Raised after the app theme changed so the window can apply it.</summary>
+    public event Action? ThemeChanged;
+
     public AppSettings Current => _settings;
 
     public bool Enabled { get => _settings.Enabled; set => Set(_settings.Enabled, value, v => _settings.Enabled = v); }
@@ -112,6 +115,25 @@ public sealed partial class SettingsViewModel : INotifyPropertyChanged
 
     public int MotionIndex { get => (int)_settings.Motion; set => Set((int)_settings.Motion, value, v => _settings.Motion = (MotionMode)Math.Clamp(v, 0, 1)); }
 
+    /// <summary>0 = use the system setting, 1 = light, 2 = dark. Applies to the window at once (no restart).</summary>
+    public int ThemeIndex
+    {
+        get => (int)_settings.Theme;
+        set
+        {
+            var theme = (AppTheme)Math.Clamp(value, 0, 2);
+            if (theme == _settings.Theme)
+            {
+                return;
+            }
+
+            _settings.Theme = theme;
+            SaveNow();
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ThemeIndex)));
+            ThemeChanged?.Invoke();
+        }
+    }
+
     /// <summary>0 = follow Windows, then <see cref="Strings.Supported"/> order.</summary>
     public int LanguageIndex
     {
@@ -151,6 +173,7 @@ public sealed partial class SettingsViewModel : INotifyPropertyChanged
     {
         _settings = SettingsStore.Load();
         Raise(string.Empty);
+        ThemeChanged?.Invoke();
     }
 
     /// <summary>For structural edits (layouts, exclusions): mutate then commit immediately.</summary>

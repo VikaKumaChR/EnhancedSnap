@@ -71,18 +71,19 @@ internal static class Program
             return 0;
         }
 
-        // Administrator mode: an unelevated start (sign-in, Start menu) hands over to the elevated task.
-        // Not in the Store package (settings carried over from the MSI may still have it on).
+        // Administrator mode: an unelevated start (sign-in, Start menu) hands over to the elevated task, and checks that an
+        // elevated engine of this executable really started. If not, this start carries on without administrator rights
+        // and the engine says so (EngineHost). Not in the Store package (settings carried over from the MSI may have it on).
         if (!Platform.Elevation.IsElevated && !Has("--elevated") && Snapping.WindowRules.TestWindowTitle is null && !AppInfo.IsPackaged
             && Win32.FindWindow(AppInfo.EngineWindowClass, null) == 0 && SettingsStore.Load().RunAsAdministrator)
         {
-            if (Platform.Elevation.RunTask())
+            if (Platform.Elevation.HandOver(out string problem))
             {
                 Log.Info("Started the elevated engine through its scheduled task");
                 return 0;
             }
 
-            Log.Warn("Administrator mode is on but its scheduled task did not start; running without administrator rights");
+            Log.Warn($"Administrator mode is on but {problem}; running without administrator rights");
         }
 
         var page = ParsePage(args);

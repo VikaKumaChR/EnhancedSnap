@@ -12,7 +12,6 @@
 ./build.ps1                    # 單元測試 → NativeAOT 發佈 → artifacts/dist/*.zip、*.msi、SHA256SUMS.txt（GitHub）
                                #   以及 artifacts/store/*.msix（上傳 Microsoft Store）
 ./build.ps1 -Version 1.0.1     # 預設：Directory.Build.props 中的 <Version>
-python tools/make_icons.py     # 由同一份設計重新產生所有圖示（Pillow、NumPy）
 ```
 
 發佈到 GitHub 與 Microsoft Store 的步驟：[PUBLISHING.md](PUBLISHING.md)（英文）。

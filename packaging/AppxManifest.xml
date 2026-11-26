@@ -4,7 +4,7 @@
   the dollar-sign tokens: the identity from packaging/store-identity.json (Partner Center: Product identity), the
   version and architecture from build.ps1, and the Windows App SDK classes the settings app activates (the runtime is
   self-contained, so the package registers them).
-  The logos come from packaging/Images (tools/make_icons.py); resources.pri resolves their scale, target-size and
+  The logos come from packaging/Images (the exported icon set, docs/DESIGN.md §8); resources.pri resolves their scale, target-size and
   theme variants.
 -->
 <Package

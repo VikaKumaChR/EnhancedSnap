@@ -22,8 +22,13 @@ public sealed partial class AppsPage : Page
 
     public Strings S { get; } = Strings.Current;
 
-    /// <summary>The Store package offers no administrator mode, so it doesn't suggest one.</summary>
+    /// <summary>The Store package offers no administrator mode: it points to the GitHub version, which does.</summary>
     public string AdminBody => Core.AppInfo.IsPackaged ? S.Apps_AdminBodyPackaged : S.Apps_AdminBody;
+
+    public Visibility StoreLinkVisibility => Core.AppInfo.IsPackaged ? Visibility.Visible : Visibility.Collapsed;
+
+    private async void GetGitHubVersion_Click(object sender, RoutedEventArgs e) =>
+        await Windows.System.Launcher.LaunchUriAsync(new Uri(Core.AppInfo.ReleasesUrl));
 
     private SettingsViewModel Vm => App.ViewModel;
 

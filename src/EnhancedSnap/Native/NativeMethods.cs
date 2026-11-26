@@ -279,6 +279,7 @@ internal static unsafe partial class NativeMethods
     public const uint NIIF_RESPECT_QUIET_TIME = 0x80;
     public const uint NIN_SELECT = WM_USER;
     public const uint NIN_KEYSELECT = WM_USER + 1;
+    public const uint NIN_BALLOONUSERCLICK = WM_USER + 5;
 
     // ---- DWM
     public const uint DWMWA_TRANSITIONS_FORCEDISABLED = 3;

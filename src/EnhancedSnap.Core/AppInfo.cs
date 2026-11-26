@@ -32,6 +32,15 @@ public static class AppInfo
     /// <summary>Lowest supported OS build. 22000 = Windows 11 21H2.</summary>
     public const int MinimumWindowsBuild = 22000;
 
+    /// <summary>The GitHub repository: source, releases, documents and issues.</summary>
+    public const string RepositoryUrl = "https://github.com/VikaKumaChR/EnhancedSnap";
+
+    /// <summary>The latest release (installer and ZIP), the way to administrator mode for Store users.</summary>
+    public const string ReleasesUrl = RepositoryUrl + "/releases/latest";
+
+    /// <summary>A file of the repository's main branch, for example "LICENSE".</summary>
+    public static string RepositoryFileUrl(string path) => $"{RepositoryUrl}/blob/main/{path}";
+
     public static string Version { get; } =
         typeof(AppInfo).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
         ?? "1.0.0";
@@ -135,5 +144,10 @@ public enum SettingsPage
     Appearance = 2,
     Keyboard = 3,
     Apps = 4,
+
+    /// <summary>The Settings page with its About section expanded (About used to be a page of its own).</summary>
     About = 5,
+
+    /// <summary>The Settings page at the bottom of the navigation: app appearance, language, about.</summary>
+    Settings = 6,
 }
